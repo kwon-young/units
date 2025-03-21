@@ -25,23 +25,16 @@ inverse(A-N) -->
    { N1 is -N },
    [A-N1].
 
-normalize_pair(A-N, R) => R = A-N.
-normalize_pair(A, R) => R = A-1.
+aggregate(L, L2) :-
+   group_pairs_by_key(L, Groups),
+   maplist([A-Ns, A-N]>>sumlist(Ns, N), Groups, L1),
+   simplify(L1, L2).
 
-aggregate(L, L1) :-
-   maplist(normalize_pair, L, Pairs),
-   group_pairs_by_key(Pairs, Groups),
-   maplist([A-Ns, A-N]>>sumlist(Ns, N), Groups, L1).
-
-simplify_(0-_, Res) => Res = 0.
-simplify_(0-_, Res) => Res = 0.
-simplify_(_-0, _) => fail.
-simplify_(1-_, _) => fail.
-simplify_(A-1, Res) => Res = A.
-simplify_(A-N, Res) => Res = A^N.
-simplify_(A, Res) => Res = A.
+identity(_-0, _) => fail.
+identity(1-_, _) => fail.
+identity(A, R) => R = A.
 simplify(L, L1) :-
-   convlist(simplify_, L, L1).
+   convlist(identity, L, L1).
 
 num_denom([], Denom, Expr) :-
    denom(Denom, 1, Expr).
@@ -56,29 +49,29 @@ denom([H | T], Num, Num/Expr) :-
 multiply([H | T], Expr) :-
    foldl([B, A, A*B]>>true, T, H, Expr).
 
-is_num(_-N) => N > 0.
-is_num(_) => true.
-
 normalize(In, Out) :-
    phrase(parse(In), L),
-   msort(L, L1),
-   aggregate(L1, L2),
-   generate_expression(L2, Out).
+   normalize_factors(L, L1),
+   generate_expression(L1, Out).
+
+is_num(_-N) => N > 0.
+
+power(A-1, Res) => Res = A.
+power(A-N, Res) => Res = A^N.
 
 generate_expression(In, Out) :-
    partition(is_num, In, Num, Denom),
-   simplify(Num, Num1),
+   maplist(power, Num, Num1),
    phrase(sequence(inverse, Denom), Denom1),
-   simplify(Denom1, Denom2),
+   maplist(power, Denom1, Denom2),
    num_denom(Num1, Denom2, Out).
 
 parse_normalize_factors(In, L3) :-
    phrase(parse(In), L),
    normalize_factors(L, L3).
-normalize_factors(L, L3) :-
+normalize_factors(L, L2) :-
    msort(L, L1),
-   aggregate(L1, L2),
-   simplify(L2, L3).
+   aggregate(L1, L2).
 
 :- table system_call/3.
 
@@ -92,6 +85,12 @@ system_call(Type, Goal, Module:Arg, Arg1) :-
    system(Type, Module),
    call(Module:Goal, Arg, Arg1).
 
+:- table system_call/5.
+
+system_call(Type, Goal, Module:Arg, Arg1, Arg2) :-
+   system(Type, Module),
+   call(Module:Goal, Arg, Arg1, Arg2).
+
 quantity_call(Goal, Arg) :-
    system_call(quantity, Goal, Arg).
 quantity_call(Goal, Arg, Arg1) :-
@@ -101,6 +100,8 @@ unit_call(Goal, Arg) :-
    system_call(unit, Goal, Arg).
 unit_call(Goal, Arg, Arg1) :-
    system_call(unit, Goal, Arg, Arg1).
+unit_call(Goal, Arg, Arg1, Arg2) :-
+   system_call(unit, Goal, Arg, Arg1, Arg2).
 
 derived_quantity(_*_) => true.
 derived_quantity(_/_) => true.
@@ -133,36 +134,30 @@ quantity_kind(Quantity, Kind) :-
    quantity_call(quantity_parent, Quantity, Parent),
    quantity_kind(Parent, Kind).
 
-mapexpr(Goal, A*B, R) =>
-   mapexpr(Goal, A, A1),
-   mapexpr(Goal, B, B1),
+:- meta_predicate mapexpr(2, ?, ?).
+
+mapexpr(Goal, A, R) :-
+   mapexpr(Goal, =, A, R).
+
+:- meta_predicate mapexpr(2, 2, ?, ?).
+
+mapexpr(Goal, F, A*B, R) =>
+   mapexpr(Goal, F, A, A1),
+   mapexpr(Goal, F, B, B1),
    R = A1*B1.
-mapexpr(Goal, A/B, R) =>
-   mapexpr(Goal, A, A1),
-   mapexpr(Goal, B, B1),
+mapexpr(Goal, F, A/B, R) =>
+   mapexpr(Goal, F, A, A1),
+   mapexpr(Goal, F, B, B1),
    R = A1/B1.
-mapexpr(Goal, A^B, R) =>
-   mapexpr(Goal, A, A1),
+mapexpr(Goal, F, A^B, R) =>
+   mapexpr(Goal, F, A, A1),
    R = A1^B.
-mapexpr(_, kind(A), R) =>
+mapexpr(_, _, kind(A), R) =>
    R = A.
-mapexpr(Goal, A, A1) =>
+mapexpr(Goal, Failure, A, A1) =>
    (  call(Goal, A, A1)
    *-> true
-   ;  A1 = A
-   ).
-mapexpr(Goal, A*B) =>
-   mapexpr(Goal, A),
-   mapexpr(Goal, B).
-mapexpr(Goal, A/B) =>
-   mapexpr(Goal, A),
-   mapexpr(Goal, B).
-mapexpr(Goal, A^_) =>
-   mapexpr(Goal, A).
-mapexpr(Goal, A) =>
-   (  call(Goal, A)
-   *-> true
-   ;  true
+   ;  call(Failure, A, A1)
    ).
 
 derived_quantity_kind(Quantity, Kind) :-
@@ -260,57 +255,16 @@ common_quantity(Q1, Q2, R) :-
    implicitly_convertible(Q2, Q),
    mapexpr(quantity_call(alias), Q, R).
 
-% unit(Unit, Symbol, Formula) :-
-%    unit_(Unit, Symbol, Formula).
-% unit(PrefixUnit, Symbol, Formula) :-
-%    \+ compound(Symbol),
-%    prefix(Prefix, PrefixSymbol, PrefixValue),
-%    PrefixUnit =.. [Prefix, Unit],
-%    unit_(Unit, UnitSymbol, _),
-%    atom_concat(PrefixSymbol, UnitSymbol, Symbol),
-%    Formula = PrefixValue * (si:Unit).
-% unit(Alias, Symbol, Formula) :-
-%    alias(Alias, Unit),
-%    unit(Unit, Symbol, Formula).
-%
-% :- table unit_kind/2.
-%
-% unit_kind(Unit, Kind) :-
-%    unit_kind_(Unit, Kind),
-%    !.
-% unit_kind(Unit, Kind) :-
-%    (  unit(Unit, _, Formula)
-%    ;  unit(_, Unit, Formula)
-%    ),
-%    formula_kind(Formula, Kind).
-% unit_kind(N, 1) :-
-%    number(N).
-%
-% formula_kind(A*B, R) =>
-%    formula_kind(A, QA),
-%    formula_kind(B, QB),
-%    R = QA*QB.
-% formula_kind(A/B, R) =>
-%    formula_kind(A, QA),
-%    formula_kind(B, QB),
-%    R = QA/QB.
-% formula_kind(A^N, R) =>
-%    formula_kind(A, QA),
-%    R = QA^N.
-% formula_kind(System:Unit, Kind) =>
-%    System:unit_kind(Unit, Kind).
-% formula_kind(Unit, Kind) =>
-%    si:unit_kind(Unit, Kind).
-%
-% :- table unit/1.
-%
-% unit(Unit) :-
-%    unit(Unit, _, _).
-% unit(Symbol) :-
-%    unit(_, Symbol, _).
-%
-%
-%
+:- table unit_kind/2.
+
+unit_kind(Unit, R) :-
+   (  unit_call(unit_kind, Unit, Kind)
+   *-> R = kind(Kind)
+   ;  unit_call(unit, Unit, _, Formula),
+      mapexpr(unit_kind, [_, 1]>>true, Formula, Kind),
+      normalize(Kind, R)
+   ).
+
 % common_unit(Unit1, NewUnit1, Unit2, NewUnit2) :-
 %    parse_normalize_factors(Unit1, F1),
 %    parse_normalize_factors(Unit2, F2),

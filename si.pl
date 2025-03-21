@@ -14,39 +14,55 @@ unit(candela, 'cd').
 unit(degree_celsius, '℃').
 
 % derived units
-unit(radian, 'rad', (si:metre)/(si:metre)).
-unit(steradian, 'sr', (si:metre)^2/(si:metre)^2).
-unit(hertz, 'Hz', 1/(si:second)).
-unit(newton, 'N', (si:kilogram)*(si:metre)/(si:second)^2).
-unit(pascal, 'Pa', (si:newton)/(si:metre)^2).
-unit(joule, 'J', (si:newton)*(si:metre)).
-unit(watt, 'W', (si:joule) / (si:second)).
-unit(coulomb, 'C', (si:ampere) / (si:second)).
-unit(volt, 'V', (si:watt) / (si:ampere)).
-unit(farad, 'F', (si:coulomb) / (si:volt)).
-unit(ohm, 'Ω', (si:volt) / (si:ampere)).
-unit(siemens, 'S', 1/(si:ohm)).
-unit(weber, 'Wb', (si:volt) * (si:second)).
-unit(tesla, 'T', (si:weber) / (si:metre)^2).
-unit(henry, 'H', (si:weber) / (si:ampere)).
-unit(lumen, 'lm', (si:candela) * (si:steradian)).
-unit(lux, 'lx', (si:lumen) / (si:metre)^2).
-unit(becquerel, 'Bq', 1/(si:second)).
-unit(gray, 'Gy', (si:joule) / (si:kilogram)).
-unit(sievert, 'Sv', (si:joule) / (si:kilogram)).
-unit(katal, 'kat', (si:mole)/(si:second)).
-unit(minute, 'min', 60*(si:second)).
-unit(hour, 'h', 60*(si:minute)).
-unit(day, 'd', 24*(si:hour)).
-unit(astronomical_unit, 'au', 149 597 870 700 * (si:metre)).
-unit(degree, '°', pi / 180 * (si:radian)).
-unit(arcminute, '′', 1/60 * (si:degree)).
-unit(arcsecond, '″', 1/60 * (si:arcminute)).
-unit(are, 'a', (si:deca(metre))^2).
-unit(litre, 'L', (si:deci(metre))^3).
-unit(tonne, 't', 1000 * (si:kilogram)).
-unit(dalton, 'Da', 16 605 390 666 050/ 10 000 000 000 000 * 10^ -27 * (si:kilogram)).
-unit(electronvolt, 'eV', 1 602 176 634 / 1 000 000 000 * 10^ -19 * (si:joule)).
+unit_(radian, 'rad', (si:metre)/(si:metre)).
+unit_(steradian, 'sr', (si:metre)^2/(si:metre)^2).
+unit_(hertz, 'Hz', 1/(si:second)).
+unit_(newton, 'N', (si:kilogram)*(si:metre)/(si:second)^2).
+unit_(pascal, 'Pa', (si:newton)/(si:metre)^2).
+unit_(joule, 'J', (si:newton)*(si:metre)).
+unit_(watt, 'W', (si:joule) / (si:second)).
+unit_(coulomb, 'C', (si:ampere) / (si:second)).
+unit_(volt, 'V', (si:watt) / (si:ampere)).
+unit_(farad, 'F', (si:coulomb) / (si:volt)).
+unit_(ohm, 'Ω', (si:volt) / (si:ampere)).
+unit_(siemens, 'S', 1/(si:ohm)).
+unit_(weber, 'Wb', (si:volt) * (si:second)).
+unit_(tesla, 'T', (si:weber) / (si:metre)^2).
+unit_(henry, 'H', (si:weber) / (si:ampere)).
+unit_(lumen, 'lm', (si:candela) * (si:steradian)).
+unit_(lux, 'lx', (si:lumen) / (si:metre)^2).
+unit_(becquerel, 'Bq', 1/(si:second)).
+unit_(gray, 'Gy', (si:joule) / (si:kilogram)).
+unit_(sievert, 'Sv', (si:joule) / (si:kilogram)).
+unit_(katal, 'kat', (si:mole)/(si:second)).
+unit_(minute, 'min', 60*(si:second)).
+unit_(hour, 'h', 60*(si:minute)).
+unit_(day, 'd', 24*(si:hour)).
+unit_(astronomical_unit, 'au', 149 597 870 700 * (si:metre)).
+unit_(degree, '°', pi / 180 * (si:radian)).
+unit_(arcminute, '′', 1/60 * (si:degree)).
+unit_(arcsecond, '″', 1/60 * (si:arcminute)).
+unit_(are, 'a', si:deca(metre)^2).
+unit_(litre, 'L', si:deci(metre)^3).
+unit_(tonne, 't', 1000 * (si:kilogram)).
+unit_(dalton, 'Da', 16 605 390 666 050/ 10 000 000 000 000 * 10^ -27 * (si:kilogram)).
+unit_(electronvolt, 'eV', 1 602 176 634 / 1 000 000 000 * 10^ -19 * (si:joule)).
+
+:- table unit/3.
+
+unit(U, S, F) :-
+   unit_(U, S, F).
+unit(Alias, S, F) :-
+   alias(Alias, System:U),
+   System:unit(U, S, F).
+unit(PrefixUnit, Symbol, PrefixFormula*si:Unit) :-
+   \+ compound(Symbol),
+   prefix(Prefix, PrefixSymbol, PrefixFormula),
+   PrefixUnit =.. [Prefix, Unit],
+   (  unit_(Unit, UnitSymbol, _)
+   ;  unit(Unit, UnitSymbol)
+   ),
+   atom_concat(PrefixSymbol, UnitSymbol, Symbol).
 
 unit_kind(second, isq:time).
 unit_kind(metre, isq:length).
@@ -68,7 +84,7 @@ origin(degree_celsius, si:zeroth_degree_Celsius).
 alias(kilogram, si:kilo(gram)).
 alias(zeroth_kelvin, si:absolute_zero).
 alias(zeroth_degree_Celsius, si:ice_point).
-alias(hectare, si:hecto(are)).
+alias(hectare, si:hectoare).
 
 absolute_point_origin(absolute_zero, si:thermodynamic_temperature).
 relative_point_origin(ice_point, 273 150 * si:milli(kelvin)).

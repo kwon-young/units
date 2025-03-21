@@ -1,17 +1,24 @@
-:- module(si, [unit/3, unit_kind/2, alias/2, prefix/3]).
+:- module(si, [unit/2, unit/3, unit_kind/2, alias/2, prefix/3]).
 
 :- use_module(units_utils).
 
 units_utils:system(unit, si).
 
-unit(second, 's').
-unit(metre, 'm').
-unit(gram, 'g').
-unit(ampere, 'A').
-unit(kelvin, 'K').
-unit(mole, 'mol').
-unit(candela, 'cd').
-unit(degree_celsius, '℃').
+unit_(second, 's').
+unit_(metre, 'm').
+unit_(gram, 'g').
+unit_(ampere, 'A').
+unit_(kelvin, 'K').
+unit_(mole, 'mol').
+unit_(candela, 'cd').
+unit_(degree_celsius, '℃').
+
+:- table unit/2.
+
+unit(Unit, Symbol) :-
+   (  unit_(Unit, Symbol)
+   ;  unit(Unit, Symbol, _)
+   ).
 
 % derived units
 unit_(radian, 'rad', (si:metre)/(si:metre)).
@@ -60,7 +67,7 @@ unit(PrefixUnit, Symbol, PrefixFormula*si:Unit) :-
    prefix(Prefix, PrefixSymbol, PrefixFormula),
    PrefixUnit =.. [Prefix, Unit],
    (  unit_(Unit, UnitSymbol, _)
-   ;  unit(Unit, UnitSymbol)
+   ;  unit_(Unit, UnitSymbol)
    ),
    atom_concat(PrefixSymbol, UnitSymbol, Symbol).
 

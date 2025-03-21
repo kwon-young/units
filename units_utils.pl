@@ -1,7 +1,6 @@
 :- module(units_utils, [
    op(100, yf,  []),
-   op(100, xfy, :),
-   op(700, xfx, qis),
+   op(99, xfy, :),
    system/2
 ]).
 

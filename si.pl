@@ -55,6 +55,17 @@ unit_(tonne, 't', 1000 * (si:kilogram)).
 unit_(dalton, 'Da', 16 605 390 666 050/ 10 000 000 000 000 * 10^ -27 * (si:kilogram)).
 unit_(electronvolt, 'eV', 1 602 176 634 / 1 000 000 000 * 10^ -19 * (si:joule)).
 
+%constants
+unit_(hyperfine_structure_transition_frequency_of_cs, 'Δν_Cs', 9 192 631 770 * si:hertz).
+unit_(speed_of_light_in_vacuum, 'c', 299 792 458 * si:metre / si:second).
+unit_(planck_constant, 'h', 662 607 015 / 100 000 000 * 10^ -34 * si:joule * si:second).
+unit_(elementary_charge, 'e', 1 602 176 634 / 1 000 000 000 * 10^ -19 * si:coulomb).
+unit_(boltzmann_constant, 'k', 1 380 649 / 1 000 000 * 10^ -23 * si:joule / si:kelvin).
+unit_(avogadro_constant, 'N_A', 602 214 076 / 100 000 000 * 10^ 23 / si:mole).
+unit_(luminous_efficacy, 'K_cd', 683 * si:lumen / si:watt).
+unit_(standard_gravity, 'g_0', 980 665 / 100 000 * si:metre / second^2).
+unit_(magnetic_constant, 'u_0', 4 * pi * 10^ -7 * si:henry / si:metre).
+
 :- table unit/3.
 
 unit(U, S, F) :-
@@ -65,9 +76,13 @@ unit(Alias, S, F) :-
 unit(PrefixUnit, Symbol, PrefixFormula*si:Unit) :-
    \+ compound(Symbol),
    prefix(Prefix, PrefixSymbol, PrefixFormula),
-   PrefixUnit =.. [Prefix, Unit],
-   (  unit_(Unit, UnitSymbol, _)
-   ;  unit_(Unit, UnitSymbol)
+   PrefixUnit =.. [Prefix, ModuleUnit],
+   (  subsumes_term(Module:Unit, ModuleUnit)
+   -> Module:Unit = ModuleUnit
+   ;  Module = si, Unit = ModuleUnit
+   ),
+   (  Module:unit_(Unit, UnitSymbol, _)
+   ;  Module:unit_(Unit, UnitSymbol)
    ),
    atom_concat(PrefixSymbol, UnitSymbol, Symbol).
 

@@ -1,7 +1,18 @@
+:- module(units, [qeval/1, qmust_be/2, eval_/2]).
+:- reexport([units_utils]).
+
 :- use_module(library(dcg/high_order)).
+:- use_module(library(clpBNR)).
+
 :- use_module(units_utils).
-:- use_module(si, []).
+:- use_module(q).
 :- use_module(isq, []).
+:- use_module(si, []).
+:- use_module(international, []).
+
+portray(Q) :-
+   is_dict(Q, q),
+   format("~p * ~p[~p]~n", [Q.v, Q.q, Q.u]).
 
 parse(A*B) ==>
    parse(A), parse(B).
@@ -152,16 +163,20 @@ mapexpr(Goal, F, A/B, R) =>
 mapexpr(Goal, F, A^B, R) =>
    mapexpr(Goal, F, A, A1),
    R = A1^B.
-mapexpr(_, _, kind(A), R) =>
-   R = A.
+% mapexpr(_, _, kind(A), R) =>
+%    R = A.
 mapexpr(Goal, Failure, A, A1) =>
    (  call(Goal, A, A1)
    *-> true
    ;  call(Failure, A, A1)
    ).
 
+quantity_kind_(kind(A), R) =>
+   R = A.
+quantity_kind_(Kind, R) =>
+   quantity_kind(Kind, R).
 derived_quantity_kind(Quantity, Kind) :-
-   mapexpr(quantity_kind, Quantity, Kind).
+   mapexpr(quantity_kind_, Quantity, Kind).
 
 kind_ancestor(Kind, Ancestor) :-
    quantity_call(quantity_parent, Kind, Parent),
@@ -210,6 +225,7 @@ implicitly_convertible__(1/kind(A), kind(1/A), _).
 implicitly_convertible__(kind(A)/kind(B), kind(A/B), _).
 implicitly_convertible__(kind(A)*kind(B), kind(A*B), _).
 implicitly_convertible__(From, To, _) :-
+   \+ quantity_call(kind_, From),
    quantity_call(quantity_parent, From, To).
 implicitly_convertible__(From, ToKind, FromKind) :-
    quantity_call(quantity_parent, ToKind, From),
@@ -226,6 +242,7 @@ implicitly_convertible__(From, To, _) :-
    quantity_call(alias, To, From).
 implicitly_convertible__(From, To, Kinds) :-
    From =.. [Name | Args],
+   Name \= :,
    select(Arg, Args, Arg1, Args1),
    implicitly_convertible__(Arg, Arg1, Kinds),
    To =.. [Name | Args1].
@@ -248,7 +265,11 @@ explicitly_convertible(From, To) :-
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From).
 
-:- table common_quantity(_, _, po(implicitly_convertible/2)).
+:- table common_quantity(_, _, po(best_common_quantity/2)).
+
+best_common_quantity(Q1, Q2) :-
+   implicitly_convertible(Q1, Q2),
+   format("~p better than ~p~n", [Q1, Q2]).
 
 common_quantity(Q1, Q2, NR) :-
    implicitly_convertible(Q1, Q),
@@ -281,6 +302,7 @@ iterative_deepening(N, L1, R1, L2, R2, L) :-
    ).
 
 is_unit(U-_) :-
+   ground(U),
    unit_call(unit, U, _).
 
 common_factors(L1, R1, N, L, L2, R2) :-
@@ -313,19 +335,51 @@ expand_factor(Unit-N, Factors) :-
    unit_call(unit, Unit, _, Formula),
    parse_normalize_factors(Formula^N, Factors).
    
-
-qeval(Result is ExprIn) =>
-   eval_(ExprIn, ExprOut),
-   V is ExprOut.v,
-   Result = ExprOut.put(v, V).
-qeval(A == B) =>
+comparable(AB, R) :-
+   AB =.. [Op, A, B],
    eval_(A, A1),
    eval_(B, B1),
-   (  common_quantity(A1.q, B1.q, _)
-   -> common_unit(A1.u, AF, B1.u, BF, _),
-      A1.v*AF =:= B1.v*BF
+   (  common_quantity(A1.q, B1.q, Q)
+   -> common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U),
+      V =.. [Op, AV, BV],
+      R = q{v: V, u: U, q: Q}
    ;  domain_error(A1, B1)
    ).
+
+qeval(Expr) =>
+   eval_(Expr, Q),
+   call(Q.v).
+eval_({ExprIn}, R) =>
+   eval_(ExprIn, ExprOut),
+   R = ExprOut.put(v, {ExprOut.v}).
+eval_(Result is ExprIn, R) =>
+   eval_(ExprIn, ExprOut),
+   R = ExprOut.put(v, V is ExprOut.v),
+   Result = ExprOut.put(v, V).
+eval_(+A, R) =>
+   eval_(A, A1),
+   R = A1.put(v, +A1.v).
+eval_(-A, R) =>
+   eval_(A, A1),
+   R = A1.put(v, -A1.v).
+eval_(A+B, R) =>
+   comparable(A+B, R).
+eval_(A-B, R) =>
+   comparable(A-B, R).
+eval_(A==B, R) =>
+   comparable(A==B, R).
+eval_(A=:=B, R) =>
+   comparable(A=:=B, R).
+eval_(A=\=B, R) =>
+   comparable(A=\=B, R).
+eval_(A<B, R) =>
+   comparable(A<B, R).
+eval_(A>B, R) =>
+   comparable(A>B, R).
+eval_(A=<B, R) =>
+   comparable(A=<B, R).
+eval_(A>=B, R) =>
+   comparable(A>=B, R).
 eval_(A*B, R) =>
    eval_(A, A1),
    eval_(B, B1),
@@ -340,20 +394,35 @@ eval_(A/B, R) =>
    normalize(A1.u/B1.u, U),
    normalize(A1.v/B1.v, V),
    R = q{v: V, q: Q, u: U}.
-eval_(A+B, R) =>
-   eval_(A, A1),
-   eval_(B, B1),
-   (  common_quantity(A1.q, B1.q, Q)
-   -> common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U),
-      R = q{v: AV+BV, u: U, q: Q}
-   ;  domain_error(A1, B1)
-   ).
 eval_(A^N, R) =>
    eval_(A, A1),
    normalize(A1.q^N, Q),
    normalize(A1.u^N, U),
    normalize(A1.v^N, V),
    R = q{v: V, q: Q, u: U}.
+eval_(in(Expr, Unit), R) =>
+   eval_(Expr, M),
+   eval_(Unit, Q),
+   (  implicitly_convertible(Q.q, M.q)
+   -> common_unit(M.u, F1, Q.u, F2, _),
+      normalize(M.v*F1/F2, V1),
+      V is V1,
+      R = q{v: V, q: M.q, u: Q.u}
+   ;  domain_error(M, Unit)
+   ).
+eval_(as(Expr, Quantity), R) =>
+   eval_(Expr, M),
+   quantity_call(quantity, Quantity),
+   (  explicitly_convertible(M.q, Quantity)
+   -> R = M.put(q, Quantity)
+   ;  domain_error(M.q, Quantity)
+   ).
+eval_(cast(Expr, Quantity), R) =>
+   eval_(Expr, M),
+   (  common_quantity(M.q, Quantity, _)
+   -> R = M.put(q, Quantity)
+   ;  domain_error(M.q, Quantity)
+   ).
 eval_(Module:Unit, R), unit_call(unit, Module:Unit, _) =>
    unit_kind(Module:Unit, Kind),
    R = q{v: 1, q: Kind, u: Module:Unit}.
@@ -371,34 +440,14 @@ eval_(Quantity[UnitExpr], R), quantity_call(quantity, Quantity) =>
    eval_(UnitExpr, Unit),
    implicitly_convertible(Unit.q, Quantity),
    R = q{v: 1, q: Quantity, u: Unit.u}.
+eval_(pi, R) =>
+   R = q{v: pi, q: 1, u: 1}.
+eval_(X, R), var(X) =>
+   R = q{v: X, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.
 eval_(N, R), number(N) =>
    R = q{v: N, q: 1, u: 1}.
-eval_(pi, R) =>
-   R = q{v: pi, q: 1, u: 1}.
-
-M.in(Unit) := R :-
-   eval_(Unit, Q),
-   (  implicitly_convertible(Q.q, M.q)
-   -> common_unit(M.u, F1, Q.u, F2, _),
-      normalize(M.v*F1/F2, V),
-      R = q{v: V, q: M.q, u: Q.u}
-   ;  domain_error(M, Unit)
-   ).
-
-M.as(Quantity) := R :-
-   quantity_call(quantity, Quantity),
-   (  explicitly_convertible(M.q, Quantity)
-   -> R = M.put(q, Quantity)
-   ;  domain_error(M.q, Quantity)
-   ).
-
-M.cast(Quantity) := R :-
-   (  common_quantity(M.q, Quantity, _)
-   -> R = M.put(q, Quantity)
-   ;  domain_error(M.q, Quantity)
-   ).
 
 :- table same_/3.
 
@@ -440,50 +489,33 @@ qmust_be(Unit, Q2) =>
 
 :- begin_tests(units).
 
-test('si:metre == si:metre') :-
-   qeval(si:metre == si:metre).
+qeval_data(si:metre =:= si:metre).
+qeval_data(si:kilo(metre) =:= si:kilo(metre)).
+qeval_data(si:kilogram =:= si:kilo(gram)).
+qeval_data(si:kg =:= si:kilo(gram)).
+qeval_data(10*(si:kilo(metre)) =:= 5*2*(si:kilo(metre))).
+qeval_data(10*(si:kilo(metre)) / 2 =:= 5*(si:kilo(metre))).
+qeval_data(1 * (si:hour) =:= 3600 * (si:second)).
+qeval_data(1 * (si:kilo(metre)) + 1 * (si:metre) =:= 1001 * (si:metre)).
+qeval_data(1 * (si:kilo(metre)) / (1 * (si:second)) =:= 1000 * (si:metre) / (si:second)).
+qeval_data(2 * (si:kilo(metre)) / (si:hour) * (2 * (si:hour)) =:= 4 * (si:kilo(metre))).
+qeval_data(2 * (si:kilo(metre)) / (2 * (si:kilo(metre)) / (si:hour)) =:= 1 * (si:hour)).
+qeval_data(2 * (si:metre) * (3 * (si:metre)) =:= 6 * (si:metre)^2).
+qeval_data(10 * (si:kilo(metre)) / (5 * (si:kilo(metre))) =:= 2).
+qeval_data(1000 / (1 * (si:second)) =:= 1 * (si:kilo(hertz))).
+qeval_data(1001 / (1 * (si:second)) =\= 1 * (si:kilo(hertz))).
+qeval_data(si:metre < si:kilo(metre)).
+qeval_data(si:metre =< si:kilo(metre)).
+qeval_data(si:metre > si:centi(metre)).
+qeval_data(si:metre >= si:centi(metre)).
 
-test('si:kilo(metre) == si:kilo(metre)') :-
-   qeval(si:kilo(metre) == si:kilo(metre)).
+test('qeval', [forall(qeval_data(Expr))]) :-
+   qeval(Expr).
 
-test('si:kilogram == si:kilo(gram)') :-
-   qeval(si:kilogram == si:kilo(gram)).
+fail_qeval_data(1001 / (1 * (si:second)) =:= 1 * (si:kilo(hertz))).
 
-test('si:kg == si:kilo(gram)') :-
-   qeval(si:kg == si:kilo(gram)).
-
-test('10*(si:kilo(metre)) == 5*2*(si:kilo(metre))') :-
-   qeval(10*(si:kilo(metre)) == 5*2*(si:kilo(metre))).
-%
-test('10*(si:kilo(metre)) / 2 == 5*(si:kilo(metre))') :-
-   qeval(10*(si:kilo(metre)) / 2 == 5*(si:kilo(metre))).
-%
-test('1 * (si:hour) == 3600 * (si:second)') :-
-   qeval(1 * (si:hour) == 3600 * (si:second)).
-%
-test('1 * (si:kilo(metre)) + 1 * (si:metre) == 1001 * (si:metre)') :-
-   qeval(1 * (si:kilo(metre)) + 1 * (si:metre) == 1001 * (si:metre)).
-%
-test('1 * (si:kilo(metre)) / (1 * (si:second)) == 1000 * (si:metre) / (si:second)') :-
-   qeval(1 * (si:kilo(metre)) / (1 * (si:second)) == 1000 * (si:metre) / (si:second)).
-%
-test('2 * (si:kilo(metre)) / (si:hour) * (2 * (si:hour)) == 4 * (si:kilo(metre))') :-
-   qeval(2 * (si:kilo(metre)) / (si:hour) * (2 * (si:hour)) == 4 * (si:kilo(metre))).
-%
-test('2 * (si:kilo(metre)) / (2 * (si:kilo(metre)) / (si:hour)) == 1 * (si:hour)') :-
-   qeval(2 * (si:kilo(metre)) / (2 * (si:kilo(metre)) / (si:hour)) == 1 * (si:hour)).
-%
-test('2 * m * (3 * m) == 6 * m2') :-
-   qeval(2 * (si:metre) * (3 * (si:metre)) == 6 * (si:metre)^2).
-%
-test('10 * km / (5 * km) == 2') :-
-   qeval(10 * (si:kilo(metre)) / (5 * (si:kilo(metre))) == 2).
-%
-test('1000 / (1 * s) == 1 * kHz') :-
-   qeval(1000 / (1 * (si:second)) == 1 * (si:kilo(hertz))).
-%
-test('1001 / (1 * s) == 1 * kHz', [fail]) :-
-   qeval(1001 / (1 * (si:second)) == 1 * (si:kilo(hertz))).
+test('fail_qeval', [forall(fail_qeval_data(Expr)), fail]) :-
+   qeval(Expr).
 
 implicitly_convertible_data(isq:width, isq:length).
 implicitly_convertible_data(isq:radius, isq:width).
@@ -504,6 +536,7 @@ explicitly_convertible_data(isq:length, isq:radius).
 explicitly_convertible_data(isq:energy, isq:mechanical_energy).
 explicitly_convertible_data(isq:length, isq:height).
 explicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:mechanical_energy).
+explicitly_convertible_data(isq:angular_measure, 1).
 
 test('not_implicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2)), fail]) :-
    implicitly_convertible(Q1, Q2).
@@ -511,6 +544,8 @@ test('not_implicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2)),
 common_quantity_data(isq:width, isq:height, isq:length).
 common_quantity_data(isq:thickness, isq:radius, isq:width).
 common_quantity_data(isq:distance, isq:path_length, isq:path_length).
+common_quantity_data(1, 1, 1).
+common_quantity_data(kind(isq:length), kind(isq:length), kind(isq:length)).
 
 test('common_quantity', [forall(common_quantity_data(Q1, Q2, Q))]) :-
    common_quantity(Q1, Q2, Q3),
@@ -533,9 +568,9 @@ test('not_explicitly_convertible', [forall(not_explicitly_convertible_data(Q1, Q
 avg_speed(Distance, Time, Speed) :-
    qeval(S is Distance / Time),
    Speed = S.as(isq:speed).
-%
+
 test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, Speed),
    qmust_be(isq:speed[si:kilo(metre)/si:hour], Speed).
-%
+
 :- end_tests(units).

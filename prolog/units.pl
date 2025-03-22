@@ -1,6 +1,11 @@
 :- module(units, [qeval/1, qmust_be/2, eval_/2]).
 :- reexport([units/units_utils]).
 
+user:portray(Q) :-
+   is_dict(Q, q),
+   !,
+   format("~p * ~p[~p]", [Q.v, Q.q, Q.u]).
+
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
 
@@ -10,9 +15,6 @@
 :- use_module(units/si, []).
 :- use_module(units/international, []).
 
-portray(Q) :-
-   is_dict(Q, q),
-   format("~p * ~p[~p]~n", [Q.v, Q.q, Q.u]).
 
 parse(A*B) ==>
    parse(A), parse(B).
@@ -419,6 +421,8 @@ eval_(cast(Expr, Quantity), R) =>
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
+eval_(X, R), var(X) =>
+   R = q{v: X, q: 1, u: 1}.
 eval_(Module:Unit, R), unit_call(unit, Module:Unit, _) =>
    unit_kind(Module:Unit, Kind),
    R = q{v: 1, q: Kind, u: Module:Unit}.
@@ -438,8 +442,6 @@ eval_(Quantity[UnitExpr], R), quantity_call(quantity, Quantity) =>
    R = q{v: 1, q: Quantity, u: Unit.u}.
 eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
-eval_(X, R), var(X) =>
-   R = q{v: X, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.
 eval_(N, R), number(N) =>

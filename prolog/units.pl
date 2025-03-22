@@ -1,14 +1,14 @@
 :- module(units, [qeval/1, qmust_be/2, eval_/2]).
-:- reexport([units_utils]).
+:- reexport([units/units_utils]).
 
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
 
-:- use_module(units_utils).
-:- use_module(q).
-:- use_module(isq, []).
-:- use_module(si, []).
-:- use_module(international, []).
+:- use_module(units/units_utils).
+:- use_module(units/q).
+:- use_module(units/isq, []).
+:- use_module(units/si, []).
+:- use_module(units/international, []).
 
 portray(Q) :-
    is_dict(Q, q),
@@ -265,11 +265,7 @@ explicitly_convertible(From, To) :-
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From).
 
-:- table common_quantity(_, _, po(best_common_quantity/2)).
-
-best_common_quantity(Q1, Q2) :-
-   implicitly_convertible(Q1, Q2),
-   format("~p better than ~p~n", [Q1, Q2]).
+:- table common_quantity(_, _, po(implicitly_convertible/2)).
 
 common_quantity(Q1, Q2, NR) :-
    implicitly_convertible(Q1, Q),

@@ -1,6 +1,6 @@
 name(units).
 title('unit and quantity arithmetic for swi-prolog').
-version('0.2').
+version('0.3').
 author('Kwon-Young Choi', 'kwon-young.choi@hotmail.fr').
 maintainer('Kwon-Young Choi', 'kwon-young.choi@hotmail.fr').
 packager('Kwon-Young Choi', 'kwon-young.choi@hotmail.fr').

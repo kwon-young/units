@@ -302,11 +302,15 @@ common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    maplist(generate_expression, [NewF1, NewF2, NewUnits],
            [NewFactor1, NewFactor2, NewUnit]).
 
-iterative_deepening(N, L1, R1, L2, R2, L) :-
-   catch(
-      common_factors(L1, R1, N, L, L2, R2),
-      depth_limit_exceeded,
-      (N1 is N + 1, iterative_deepening(N1, L1, R1, L2, R2, L))
+iterative_deepening(Limit, L1, R1, L2, R2, L) :-
+   N = n(no),
+   (  common_factors(L1, R1, Limit-N, L, L2, R2)
+   -> true
+   ;  (  N = n(depth_limit_exceeded)
+      -> Limit1 is Limit + 1,
+         iterative_deepening(Limit1, L1, R1, L2, R2, L)
+      ;  fail
+      )
    ).
 
 is_unit(U-_) :-
@@ -322,14 +326,16 @@ common_factors(L1, R1, N, L, L2, R2) :-
    append(Factor1, R11, R1),
    append(Factor2, R22, R2),
    expand_either_factors(Unit1Only, R11, N, R, Unit2Only, R22).
-expand_either_factors([], [], _, [], [], []).
-expand_either_factors([H1 | L1], R1, N, L, L2, R2) :-
-   (  N > 0
-   -> N1 is N - 1
-   ;  throw(depth_limit_exceeded)
+expand_either_factors([], [], _-N, [], [], []) :-
+   setarg(1, N, no).
+expand_either_factors([H1 | L1], R1, Limit-N, L, L2, R2) :-
+   (  Limit > 0
+   -> Limit1 is Limit - 1
+   ;  nb_setarg(1, N, depth_limit_exceeded),
+      fail
    ),
-   (  phrase(select_factor([H1 | L1], R1, N1, L), L2, R2)
-   ;  phrase(select_factor(L2, R2, N1, L), [H1 | L1], R1)
+   (  phrase(select_factor([H1 | L1], R1, Limit1-N, L), L2, R2)
+   ;  phrase(select_factor(L2, R2, Limit1-N, L), [H1 | L1], R1)
    ).
 select_factor(L1, R1, N, L) -->
    select(A),
@@ -339,6 +345,9 @@ select_factor(L1, R1, N, L) -->
 
 expand_factors(A), Factors -->
    { expand_factor(A, Factors) }.
+expand_factor(Alias-N, Factors) :-
+   unit_call(alias, Alias, Unit),
+   parse_normalize_factors(Unit^N, Factors).
 expand_factor(Unit-N, Factors) :-
    unit_call(unit, Unit, _, Formula),
    parse_normalize_factors(Formula^N, Factors).

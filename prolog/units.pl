@@ -223,9 +223,12 @@ character_op(isq:vector/isq:real_scalar, isq:vector).
 character_op(isq:real_scalar^_, isq:real_scalar).
 character_op(isq:vector^_, isq:vector).
 
-implicitly_convertible__(1/kind(A), kind(1/A), _).
-implicitly_convertible__(kind(A)/kind(B), kind(A/B), _).
-implicitly_convertible__(kind(A)*kind(B), kind(A*B), _).
+implicitly_convertible__(A^2, A*A, _).
+implicitly_convertible__(A/(B*C), A/B*1/C, _).
+implicitly_convertible__(A*1/B, A/B, _).
+% implicitly_convertible__(1/kind(A), kind(1/A), _).
+% implicitly_convertible__(kind(A)/kind(B), kind(A/B), _).
+% implicitly_convertible__(kind(A)*kind(B), kind(A*B), _).
 implicitly_convertible__(From, To, _) :-
    \+ quantity_call(kind_, From),
    quantity_call(quantity_parent, From, To).
@@ -239,15 +242,18 @@ implicitly_convertible__(From, ToKind, FromKind) :-
 implicitly_convertible__(From, To, _) :-
    quantity_call(quantity_formula, To, From).
 implicitly_convertible__(kind(From), To, _) :-
-   quantity_kind(To, From).
+   derived_kind_quantity(From, To).
 implicitly_convertible__(From, To, _) :-
-   quantity_call(alias, To, From).
+   quantity_call(alias, From, To).
 implicitly_convertible__(From, To, Kinds) :-
    From =.. [Name | Args],
    Name \= :,
    select(Arg, Args, Arg1, Args1),
    implicitly_convertible__(Arg, Arg1, Kinds),
    To =.. [Name | Args1].
+
+derived_kind_quantity(Kind, Quantity) :-
+   mapexpr([K, Q]>>quantity_kind(Q, K), Kind, Quantity).
 
 :- table implicitly_convertible_/3.
 
@@ -267,7 +273,11 @@ explicitly_convertible(From, To) :-
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From).
 
-:- table common_quantity(_, _, po(implicitly_convertible/2)).
+:- table common_quantity(_, _, po(best_common/2)).
+
+best_common(Q1, Q2) :-
+   implicitly_convertible(Q1, Q2),
+   format("~p better than ~p~n", [Q1, Q2]).
 
 common_quantity(Q1, Q2, NR) :-
    implicitly_convertible(Q1, Q),
@@ -344,6 +354,26 @@ comparable(AB, R) :-
    ;  domain_error(A1, B1)
    ).
 
+normalize_kind(kind(A)/kind(B), R) =>
+   normalize(A/B, AB),
+   R = kind(AB).
+normalize_kind(kind(A)*kind(B), R) =>
+   normalize(A*B, AB),
+   R = kind(AB).
+normalize_kind(kind(A)^N, R) =>
+   normalize(A^N, AN),
+   R = kind(AN).
+normalize_kind(kind(A)/B, R) =>
+   normalize(A/B, R).
+normalize_kind(A/kind(B), R) =>
+   normalize(A/B, R).
+normalize_kind(kind(A)*B, R) =>
+   normalize(A*B, R).
+normalize_kind(A*kind(B), R) =>
+   normalize(A*B, R).
+normalize_kind(A, R) =>
+   normalize(A, R).
+
 qeval(Expr) =>
    eval_(Expr, Q),
    call(Q.v).
@@ -381,27 +411,27 @@ eval_(A>=B, R) =>
 eval_(A*B, R) =>
    eval_(A, A1),
    eval_(B, B1),
-   normalize(A1.q*B1.q, Q),
+   normalize_kind(A1.q*B1.q, Q),
    normalize(A1.u*B1.u, U),
    normalize(A1.v*B1.v, V),
    R = q{v: V, q: Q, u: U}.
 eval_(A/B, R) =>
    eval_(A, A1),
    eval_(B, B1),
-   normalize(A1.q/B1.q, Q),
+   normalize_kind(A1.q/B1.q, Q),
    normalize(A1.u/B1.u, U),
    normalize(A1.v/B1.v, V),
    R = q{v: V, q: Q, u: U}.
 eval_(A^N, R) =>
    eval_(A, A1),
-   normalize(A1.q^N, Q),
+   normalize_kind(A1.q^N, Q),
    normalize(A1.u^N, U),
    normalize(A1.v^N, V),
    R = q{v: V, q: Q, u: U}.
 eval_(in(Expr, Unit), R) =>
    eval_(Expr, M),
    eval_(Unit, Q),
-   (  implicitly_convertible(Q.q, M.q)
+   (  common_quantity(Q.q, M.q, _)
    -> common_unit(M.u, F1, Q.u, F2, _),
       normalize(M.v*F1/F2, V1),
       V is V1,
@@ -436,10 +466,15 @@ eval_(Module:UnitSymbol, R), unit_call(unit, Module:Unit, UnitSymbol) =>
 eval_(UnitSymbol, R), unit_call(unit, Unit, UnitSymbol) =>
    unit_kind(Unit, Kind),
    R = q{v: 1, q: Kind, u: Unit}.
-eval_(Quantity[UnitExpr], R), quantity_call(quantity, Quantity) =>
+eval_(QuantityExpr[UnitExpr], R) =>
+   eval_(QuantityExpr, Quantity),
    eval_(UnitExpr, Unit),
-   implicitly_convertible(Unit.q, Quantity),
-   R = q{v: 1, q: Quantity, u: Unit.u}.
+   implicitly_convertible(Unit.q, Quantity.q),
+   R = q{v: 1, q: Quantity.q, u: Unit.u}.
+eval_(Quantity, R), quantity_call(quantity, Quantity) =>
+   R = q{v: 1, q: Quantity, u: 1}.
+eval_(kind(Quantity), R), quantity_call(quantity, Quantity) =>
+   R = q{v: 1, q: kind(Quantity), u: 1}.
 eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
@@ -453,6 +488,8 @@ same_(unit, U-N, U-N) :-
    unit_call(unit, U, _).
 same_(quantity, U-N, U-N) :-
    quantity_call(quantity, U).
+same_(quantity, kind(U)-N, kind(U)-N) :-
+   quantity_call(quantity, U).
 same_(Type, U1-N, U2-N) :-
    system_call(Type, alias, U1, U2).
 same_(Type, U1, U2) :-
@@ -463,6 +500,9 @@ same(Type, U1, U2) :-
    parse_normalize_factors(U2, F2),
    maplist(same_(Type), F1, F2).
 
+qmust_be(A1/B1, A2/B2) =>
+   qmust_be(A1, A2),
+   qmust_be(B1, B2).
 qmust_be(Quantity[Unit], Q2) =>
    eval_(Quantity[Unit], Q1),
    (  same(quantity, Q1.q, Q2.q)
@@ -522,7 +562,10 @@ implicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:energy).
 implicitly_convertible_data(isq:mass*isq:height^2/isq:time^2, isq:energy).
 implicitly_convertible_data(isq:mass*isq:speed^2, isq:kinetic_energy).
 implicitly_convertible_data(kind(isq:length), isq:height).
-implicitly_convertible_data(kind(isq:length)/kind(isq:time), kind(isq:length/isq:time)).
+% implicitly_convertible_data(kind(isq:length)/kind(isq:time), kind(isq:length/isq:time)).
+implicitly_convertible_data(isq:acceleration, isq:speed/isq:time).
+implicitly_convertible_data(kind(isq:length/isq:time^2), isq:acceleration).
+implicitly_convertible_data(kind(isq:length/isq:time^2), isq:velocity/isq:duration).
 
 test('implicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    implicitly_convertible(Q1, Q2).
@@ -535,6 +578,8 @@ explicitly_convertible_data(isq:energy, isq:mechanical_energy).
 explicitly_convertible_data(isq:length, isq:height).
 explicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:mechanical_energy).
 explicitly_convertible_data(isq:angular_measure, 1).
+explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
+explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
 
 test('not_implicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2)), fail]) :-
    implicitly_convertible(Q1, Q2).
@@ -570,5 +615,18 @@ avg_speed(Distance, Time, Speed) :-
 test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, Speed),
    qmust_be(isq:speed[si:kilo(metre)/si:hour], Speed).
+
+test('in as') :-
+   qeval(Speed is (m/s in inch/h) as isq:speed),
+   qmust_be(isq:speed[international:inch/si:hour], Speed).
+
+test('acceleration') :-
+   qeval(Speed is 60 * isq:speed[km/h]),
+   qeval(Duration is 8 * s),
+   qeval(A is (Speed / Duration in m/s^2)),
+   qmust_be((isq:speed/isq:time)[si:metre/si:second^2], A),
+   qeval(Acceleration is A as isq:acceleration),
+   qmust_be(isq:acceleration[si:metre/si:second^2], Acceleration).
+
 
 :- end_tests(units).

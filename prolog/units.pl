@@ -223,67 +223,38 @@ character_op(isq:vector/isq:real_scalar, isq:vector).
 character_op(isq:real_scalar^_, isq:real_scalar).
 character_op(isq:vector^_, isq:vector).
 
-implicitly_convertible__(A^2, A*A, _).
-implicitly_convertible__(A/(B*C), A/B*1/C, _).
-implicitly_convertible__(A*1/B, A/B, _).
-% implicitly_convertible__(1/kind(A), kind(1/A), _).
-% implicitly_convertible__(kind(A)/kind(B), kind(A/B), _).
-% implicitly_convertible__(kind(A)*kind(B), kind(A*B), _).
-implicitly_convertible__(From, To, _) :-
-   \+ quantity_call(kind_, From),
-   quantity_call(quantity_parent, From, To).
-implicitly_convertible__(From, ToKind, FromKind) :-
-   quantity_call(quantity_parent, ToKind, From),
+implicitly_convertible(From, To, Explicit) :-
+   normalize(To, NormalizedTo),
+   common_quantity(From, NormalizedTo, NormalizedTo),
+   (  Explicit == false, quantity_kind(From, FromKind), quantity_call(kind_, FromKind)
+   -> common_quantity(FromKind, NormalizedTo, FromKind)
+   ;  true
+   ),
+   !.
+implicitly_convertible(From, ToKind, Explicit) :-
    kind(ToKind),
-   % should be direct descendent or ascendent, no siblings
-   (  kind_ancestors(ToKind, FromKind)
-   ;  kind_ancestors(FromKind, ToKind)
-   ).
-implicitly_convertible__(From, To, _) :-
-   quantity_call(quantity_formula, To, From).
-implicitly_convertible__(kind(From), To, _) :-
-   derived_kind_quantity(From, To).
-implicitly_convertible__(From, To, _) :-
-   quantity_call(alias, From, To).
-implicitly_convertible__(From, To, Kinds) :-
-   From =.. [Name | Args],
-   Name \= :,
-   select(Arg, Args, Arg1, Args1),
-   implicitly_convertible__(Arg, Arg1, Kinds),
-   To =.. [Name | Args1].
-
-derived_kind_quantity(Kind, Quantity) :-
-   mapexpr([K, Q]>>quantity_kind(Q, K), Kind, Quantity).
-
-:- table implicitly_convertible_/3.
-
-implicitly_convertible_(Q, Q, _).
-implicitly_convertible_(From, To, Kinds) :-
-   implicitly_convertible__(From, New, Kinds),
-   implicitly_convertible_(New, To, Kinds).
+   quantity_call(quantity_parent, ToKind, Formula),
+   implicitly_convertible(From, Formula, Explicit),
+   derived_quantity_kind(From, FromKind),
+   normalize(FromKind, NormalizedFromKind),
+   common_quantity(NormalizedFromKind, ToKind, CommonKind),
+   (  (CommonKind == NormalizedFromKind ; CommonKind == ToKind)
+   -> true
+   ),
+   !.
+implicitly_convertible(From, To, _) :-
+   quantity_call(quantity_formula, To, Formula),
+   implicitly_convertible(From, Formula).
 
 implicitly_convertible(From, To) :-
-   derived_quantity_kind(From, Kind),
-   implicitly_convertible_(From, To, Kind).
+   implicitly_convertible(From, To, false).
 
 :- table explicitly_convertible/2.
 
 explicitly_convertible(From, To) :-
-   implicitly_convertible(From, To).
+   implicitly_convertible(From, To, true).
 explicitly_convertible(From, To) :-
-   implicitly_convertible(To, From).
-
-:- table common_quantity(_, _, po(best_common/2)).
-
-best_common(Q1, Q2) :-
-   implicitly_convertible(Q1, Q2),
-   format("~p better than ~p~n", [Q1, Q2]).
-
-common_quantity(Q1, Q2, NR) :-
-   implicitly_convertible(Q1, Q),
-   implicitly_convertible(Q2, Q),
-   mapexpr(quantity_call(alias), Q, R),
-   normalize(R, NR).
+   implicitly_convertible(To, From, true).
 
 :- table unit_kind/2.
 
@@ -296,60 +267,88 @@ unit_kind(Unit, R) :-
    ).
 
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+   common_expr(unit, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+common_quantity(kind(Unit1), kind(Unit2), NewUnit) =>
+   common_quantity(Unit1, Unit2, Unit3),
+   (  (Unit1 == Unit3 ; Unit2 == Unit3)
+   -> NewUnit = kind(Unit3)
+   ;  NewUnit = Unit3
+   ).
+common_quantity(kind(Unit1), Unit2, NewUnit) =>
+   common_quantity(Unit1, Unit2, Unit3),
+   (  Unit1 == Unit3
+   -> NewUnit = Unit2
+   ;  NewUnit = Unit3
+   ).
+common_quantity(Unit1, kind(Unit2), NewUnit) =>
+   common_quantity(kind(Unit2), Unit1, NewUnit).
+common_quantity(Unit1, Unit2, NewUnit) =>
+   common_expr(quantity, Unit1, 1, Unit2, 1, NewUnit).
+
+common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    parse_normalize_factors(Unit1, F1),
    parse_normalize_factors(Unit2, F2),
-   once(iterative_deepening(1, F1, NewF1, F2, NewF2, NewUnits)),
-   maplist(generate_expression, [NewF1, NewF2, NewUnits],
+   once(iterative_deepening(1,
+      {F1, NewF1, Type, NewUnits, F2, NewF2}/[N]>>common_factors(
+         F1, NewF1, Type, NewUnits, N, F2, NewF2))),
+   msort(NewUnits, SortedNewUnits),
+   maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
            [NewFactor1, NewFactor2, NewUnit]).
 
-iterative_deepening(Limit, L1, R1, L2, R2, L) :-
+iterative_deepening(Limit, Goal) :-
    N = n(no),
-   (  common_factors(L1, R1, Limit-N, L, L2, R2)
+   (  call(Goal, Limit-N)
    -> true
    ;  (  N = n(depth_limit_exceeded)
       -> Limit1 is Limit + 1,
-         iterative_deepening(Limit1, L1, R1, L2, R2, L)
+         iterative_deepening(Limit1, Goal)
       ;  fail
       )
    ).
 
-is_unit(U-_) :-
+is_of(unit, U-_) :-
    ground(U),
    unit_call(unit, U, _).
+is_of(quantity, U-_) :-
+   ground(U),
+   quantity_call(quantity, U).
 
-common_factors(L1, R1, N, L, L2, R2) :-
-   partition(is_unit, L1, Unit1, Factor1),
-   partition(is_unit, L2, Unit2, Factor2),
+common_factors(L1, R1, Type, L, N, L2, R2) :-
+   partition(is_of(Type), L1, Unit1, Factor1),
+   partition(is_of(Type), L2, Unit2, Factor2),
    ord_intersection(Unit1, Unit2, CommonUnits, Unit2Only),
    ord_subtract(Unit1, Unit2, Unit1Only),
    append(CommonUnits, R, L),
    append(Factor1, R11, R1),
    append(Factor2, R22, R2),
-   expand_either_factors(Unit1Only, R11, N, R, Unit2Only, R22).
-expand_either_factors([], [], _-N, [], [], []) :-
+   expand_either_factors(Unit1Only, R11, Type, R, N, Unit2Only, R22).
+expand_either_factors([], [], _, [], _-N, [], []) :-
    setarg(1, N, no).
-expand_either_factors([H1 | L1], R1, Limit-N, L, L2, R2) :-
+expand_either_factors([H1 | L1], R1, Type, L, Limit-N, L2, R2) :-
    (  Limit > 0
    -> Limit1 is Limit - 1
    ;  nb_setarg(1, N, depth_limit_exceeded),
       fail
    ),
-   (  phrase(select_factor([H1 | L1], R1, Limit1-N, L), L2, R2)
-   ;  phrase(select_factor(L2, R2, Limit1-N, L), [H1 | L1], R1)
+   (  phrase(select_factor([H1 | L1], R1, Type, L, Limit1-N), L2, R2)
+   ;  phrase(select_factor(L2, R2, Type, L, Limit1-N), [H1 | L1], R1)
    ).
-select_factor(L1, R1, N, L) -->
+select_factor(L1, R1, Type, L, N) -->
    select(A),
-   expand_factors(A),
+   expand_factors(Type, A),
    normalize_factors,
-   common_factors(L1, R1, N, L).
+   common_factors(L1, R1, Type, L, N).
 
-expand_factors(A), Factors -->
-   { expand_factor(A, Factors) }.
-expand_factor(Alias-N, Factors) :-
-   unit_call(alias, Alias, Unit),
+expand_factors(Type, A), Factors -->
+   { expand_factor(Type, A, Factors) }.
+expand_factor(Type, Alias-N, Factors) :-
+   system_call(Type, alias, Alias, Unit),
    parse_normalize_factors(Unit^N, Factors).
-expand_factor(Unit-N, Factors) :-
-   unit_call(unit, Unit, _, Formula),
+expand_factor(Type, Unit-N, Factors) :-
+   (  Type = unit
+   -> unit_call(unit, Unit, _, Formula)
+   ;  quantity_call(quantity_parent, Unit, Formula)
+   ),
    parse_normalize_factors(Formula^N, Factors).
    
 comparable(AB, R) :-
@@ -569,6 +568,7 @@ implicitly_convertible_data(isq:radius, isq:width).
 implicitly_convertible_data(isq:radius, isq:length).
 implicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:energy).
 implicitly_convertible_data(isq:mass*isq:height^2/isq:time^2, isq:energy).
+implicitly_convertible_data(isq:height^2*isq:mass/isq:time^2, isq:energy).
 implicitly_convertible_data(isq:mass*isq:speed^2, isq:kinetic_energy).
 implicitly_convertible_data(kind(isq:length), isq:height).
 % implicitly_convertible_data(kind(isq:length)/kind(isq:time), kind(isq:length/isq:time)).
@@ -588,7 +588,6 @@ explicitly_convertible_data(isq:length, isq:height).
 explicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:mechanical_energy).
 explicitly_convertible_data(isq:angular_measure, 1).
 explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
-explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
 
 test('not_implicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2)), fail]) :-
    implicitly_convertible(Q1, Q2).
@@ -598,10 +597,10 @@ common_quantity_data(isq:thickness, isq:radius, isq:width).
 common_quantity_data(isq:distance, isq:path_length, isq:path_length).
 common_quantity_data(1, 1, 1).
 common_quantity_data(kind(isq:length), kind(isq:length), kind(isq:length)).
+common_quantity_data(isq:width, kind(isq:length), isq:width).
 
 test('common_quantity', [forall(common_quantity_data(Q1, Q2, Q))]) :-
-   common_quantity(Q1, Q2, Q3),
-   Q3 == Q.
+   common_quantity(Q1, Q2, Q).
 
 test('explicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    explicitly_convertible(Q1, Q2).
@@ -637,5 +636,10 @@ test('acceleration') :-
    qeval(Acceleration is A as isq:acceleration),
    qmust_be(isq:acceleration[si:metre/si:second^2], Acceleration).
 
+test('clpBNR') :-
+   qeval({A * inch == 1 * metre}),
+   A == 5000r127,
+   qeval({B == 5000 * gram / (2*gram)}),
+   B == 2500.
 
 :- end_tests(units).

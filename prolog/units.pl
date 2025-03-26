@@ -651,8 +651,7 @@ test('not_explicitly_convertible', [forall(not_explicitly_convertible_data(Q1, Q
    explicitly_convertible(Q1, Q2).
 
 avg_speed(Distance, Time, Speed) :-
-   qeval(S is Distance / Time),
-   Speed = S.as(isq:speed).
+   qeval(Speed is Distance / Time as isq:speed).
 
 test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, Speed),
@@ -661,6 +660,20 @@ test('avg_speed') :-
 test('in as') :-
    qeval(Speed is (m/s in inch/h) as isq:speed),
    qmust_be(isq:speed[international:inch/si:hour], Speed).
+
+as_data(_ is isq:width[m] as isq:length).
+as_data(_ is isq:width[m] / isq:time[s] as isq:speed).
+
+test('as', [forall(as_data(Expr))]) :-
+   qeval(Expr).
+
+error_as_data(_ is isq:length[m] as isq:width).
+
+test('error_as', [forall(error_as_data(Expr)), error(domain_error(_, _))]) :-
+   qeval(Expr).
+
+test('error_in', [error(domain_error(_, _))]) :-
+   qeval(_ is si:hertz in si:becquerel).
 
 test('acceleration') :-
    qeval(Speed is 60 * isq:velocity[km/h]),

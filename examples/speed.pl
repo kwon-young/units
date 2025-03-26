@@ -11,4 +11,4 @@ main :-
 main2 :-
    qeval(Speed is 60 * isq:speed[km/h]),
    qeval(Duration is 8 * s),
-   qeval(Acceleration is Speed / Duration in m/s^2).
+   qeval(Acceleration is Speed / Duration in m/s**2).

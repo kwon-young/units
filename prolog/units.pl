@@ -23,14 +23,14 @@ parse(A/B) ==>
    parse(A),
    { phrase(parse(B), L) },
    sequence(inverse, L).
-parse((A*B)^N) ==>
-   parse(A^N*B^N).
-parse((A/B)^N) ==>
-   parse(A^N/B^N).
-parse((A^N1)^N2) ==>
+parse((A*B)**N) ==>
+   parse(A**N*B**N).
+parse((A/B)**N) ==>
+   parse(A**N/B**N).
+parse((A**N1)**N2) ==>
    { N is N1 * N2 },
-   parse(A^N).
-parse(A^N) ==>
+   parse(A**N).
+parse(A**N) ==>
    [A-N].
 parse(A) ==>
    [A-1].
@@ -71,7 +71,7 @@ normalize(In, Out) :-
 is_num(_-N) => N > 0.
 
 power(A-1, Res) => Res = A.
-power(A-N, Res) => Res = A^N.
+power(A-N, Res) => Res = A**N.
 
 generate_expression(In, Out) :-
    partition(is_num, In, Num, Denom),
@@ -119,7 +119,7 @@ unit_call(Goal, Arg, Arg1, Arg2) :-
 
 derived_quantity(_*_) => true.
 derived_quantity(_/_) => true.
-derived_quantity(_^_) => true.
+derived_quantity(_**_) => true.
 derived_quantity(_) => fail.
 
 :- table root/1.
@@ -163,9 +163,9 @@ mapexpr(Goal, F, A/B, R) =>
    mapexpr(Goal, F, A, A1),
    mapexpr(Goal, F, B, B1),
    R = A1/B1.
-mapexpr(Goal, F, A^B, R) =>
+mapexpr(Goal, F, A**B, R) =>
    mapexpr(Goal, F, A, A1),
-   R = A1^B.
+   R = A1**B.
 % mapexpr(_, _, kind(A), R) =>
 %    R = A.
 mapexpr(Goal, Failure, A, A1) =>
@@ -229,8 +229,8 @@ character_op(isq:real_scalar*isq:vector, isq:vector).
 character_op(isq:vector*isq:real_scalar, isq:vector).
 character_op(isq:real_scalar/isq:vector, isq:vector).
 character_op(isq:vector/isq:real_scalar, isq:vector).
-character_op(isq:real_scalar^_, isq:real_scalar).
-character_op(isq:vector^_, isq:vector).
+character_op(isq:real_scalar**_, isq:real_scalar).
+character_op(isq:vector**_, isq:vector).
 
 implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
@@ -357,13 +357,13 @@ expand_factors(Type, A), Factors -->
    { expand_factor(Type, A, Factors) }.
 expand_factor(Type, Alias-N, Factors) :-
    system_call(Type, alias, Alias, Unit),
-   parse_normalize_factors(Unit^N, Factors).
+   parse_normalize_factors(Unit**N, Factors).
 expand_factor(Type, Unit-N, Factors) :-
    (  Type = unit
    -> unit_call(unit, Unit, _, Formula)
    ;  quantity_call(quantity_parent, Unit, Formula)
    ),
-   parse_normalize_factors(Formula^N, Factors).
+   parse_normalize_factors(Formula**N, Factors).
    
 comparable(AB, R) :-
    AB =.. [Op, A, B],
@@ -382,8 +382,8 @@ normalize_kind(kind(A)/kind(B), R) =>
 normalize_kind(kind(A)*kind(B), R) =>
    normalize(A*B, AB),
    R = kind(AB).
-normalize_kind(kind(A)^N, R) =>
-   normalize(A^N, AN),
+normalize_kind(kind(A)**N, R) =>
+   normalize(A**N, AN),
    R = kind(AN).
 normalize_kind(kind(A)/B, R) =>
    normalize(A/B, R).
@@ -447,12 +447,14 @@ eval_(A/B, R) =>
    normalize(A1.u/B1.u, U),
    normalize(A1.v/B1.v, V),
    R = q{v: V, q: Q, u: U}.
-eval_(A^N, R) =>
+eval_(A**N, R) =>
    eval_(A, A1),
-   normalize_kind(A1.q^N, Q),
-   normalize(A1.u^N, U),
-   normalize(A1.v^N, V),
+   normalize_kind(A1.q**N, Q),
+   normalize(A1.u**N, U),
+   normalize(A1.v**N, V),
    R = q{v: V, q: Q, u: U}.
+eval_(A^N, R) =>
+   eval_(A**N, R).
 eval_(in(Expr, Unit), R) =>
    eval_(Expr, M),
    eval_(Unit, Q),
@@ -574,7 +576,7 @@ qeval_data(1 * (si:kilo(metre)) + 1 * (si:metre) =:= 1001 * (si:metre)).
 qeval_data(1 * (si:kilo(metre)) / (1 * (si:second)) =:= 1000 * (si:metre) / (si:second)).
 qeval_data(2 * (si:kilo(metre)) / (si:hour) * (2 * (si:hour)) =:= 4 * (si:kilo(metre))).
 qeval_data(2 * (si:kilo(metre)) / (2 * (si:kilo(metre)) / (si:hour)) =:= 1 * (si:hour)).
-qeval_data(2 * (si:metre) * (3 * (si:metre)) =:= 6 * (si:metre)^2).
+qeval_data(2 * (si:metre) * (3 * (si:metre)) =:= 6 * (si:metre)**2).
 qeval_data(10 * (si:kilo(metre)) / (5 * (si:kilo(metre))) =:= 2).
 qeval_data(1000 / (1 * (si:second)) =:= 1 * (si:kilo(hertz))).
 qeval_data(1001 / (1 * (si:second)) =\= 1 * (si:kilo(hertz))).
@@ -600,15 +602,15 @@ test('error_qeval', [forall(error_qeval_data(Expr)), error(domain_error(_, _))])
 implicitly_convertible_data(isq:width, isq:length).
 implicitly_convertible_data(isq:radius, isq:width).
 implicitly_convertible_data(isq:radius, isq:length).
-implicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:energy).
-implicitly_convertible_data(isq:mass*isq:height^2/isq:time^2, isq:energy).
-implicitly_convertible_data(isq:height^2*isq:mass/isq:time^2, isq:energy).
-implicitly_convertible_data(isq:mass*isq:speed^2, isq:kinetic_energy).
+implicitly_convertible_data(isq:mass*isq:length**2/isq:time**2, isq:energy).
+implicitly_convertible_data(isq:mass*isq:height**2/isq:time**2, isq:energy).
+implicitly_convertible_data(isq:height**2*isq:mass/isq:time**2, isq:energy).
+implicitly_convertible_data(isq:mass*isq:speed**2, isq:kinetic_energy).
 implicitly_convertible_data(kind(isq:length), isq:height).
 % implicitly_convertible_data(kind(isq:length)/kind(isq:time), kind(isq:length/isq:time)).
 implicitly_convertible_data(isq:acceleration, isq:speed/isq:time).
-implicitly_convertible_data(kind(isq:length/isq:time^2), isq:acceleration).
-implicitly_convertible_data(kind(isq:length/isq:time^2), isq:velocity/isq:duration).
+implicitly_convertible_data(kind(isq:length/isq:time**2), isq:acceleration).
+implicitly_convertible_data(kind(isq:length/isq:time**2), isq:velocity/isq:duration).
 
 test('implicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    implicitly_convertible(Q1, Q2).
@@ -619,7 +621,7 @@ explicitly_convertible_data(isq:width, isq:radius).
 explicitly_convertible_data(isq:length, isq:radius).
 explicitly_convertible_data(isq:energy, isq:mechanical_energy).
 explicitly_convertible_data(isq:length, isq:height).
-explicitly_convertible_data(isq:mass*isq:length^2/isq:time^2, isq:mechanical_energy).
+explicitly_convertible_data(isq:mass*isq:length**2/isq:time**2, isq:mechanical_energy).
 explicitly_convertible_data(isq:angular_measure, 1).
 explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
 
@@ -645,7 +647,7 @@ test('explicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2))]) :-
 not_explicitly_convertible_data(isq:height, isq:width).
 not_explicitly_convertible_data(isq:time, isq:length).
 not_explicitly_convertible_data(isq:frequency, isq:activity).
-not_explicitly_convertible_data(isq:mass*isq:height^2/isq:time^2, isq:mechanical_energy).
+not_explicitly_convertible_data(isq:mass*isq:height**2/isq:time**2, isq:mechanical_energy).
 
 test('not_explicitly_convertible', [forall(not_explicitly_convertible_data(Q1, Q2)), fail]) :-
    explicitly_convertible(Q1, Q2).
@@ -679,13 +681,14 @@ test('acceleration') :-
    qeval(Speed is 60 * isq:velocity[km/h]),
    qeval(Duration is 8 * s),
    qeval(A is (Speed / Duration) as isq:acceleration),
-   qeval(B is A in m/s^2),
-   qmust_be(isq:acceleration[si:metre/si:second^2], B).
+   qeval(B is A in m/s**2),
+   qmust_be(isq:acceleration[si:metre/si:second**2], B).
 
 test('clpBNR') :-
    qeval({A * inch == 1 * metre}),
    A == 5000r127,
    qeval({B == 5000 * gram / (2*gram)}),
-   B == 2500.
+   B == 2500,
+   qeval({1 is 1^2}).
 
 :- end_tests(units).

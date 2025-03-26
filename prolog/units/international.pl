@@ -35,13 +35,13 @@ unit_(knot, kn, international:nautical_mile / si:hour).
 
 % force
 % https://en.wikipedia.org/wiki/Poundal
-unit_(poundal, pdl, international:pound * international:foot / si:second^2).
+unit_(poundal, pdl, international:pound * international:foot / si:second**2).
 
 % https://en.wikipedia.org/wiki/Pound_(force)
 unit_(pound_force, lbf, international:pound * si:standard_gravity).
 
 % pressure
-unit_(psi, psi, international:pound_force / international:inch^2).
+unit_(psi, psi, international:pound_force / international:inch**2).
 
 % power
 % https://en.wikipedia.org/wiki/Horsepower#Definitions

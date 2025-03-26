@@ -27,7 +27,7 @@ base_dimension(Alias, Symbol) :-
 quantity_parent_(width, isq:length).
 quantity_parent_(radius, isq:width).
 quantity_parent_(path_length, isq:length).
-quantity_parent_(area, isq:length^2).
+quantity_parent_(area, isq:length**2).
 quantity_parent_(period_duration, isq:duration).
 quantity_parent_(frequency, 1/isq:period_duration).
 
@@ -39,7 +39,7 @@ quantity_parent_(radial_distance, isq:distance).
 quantity_parent_(position_vector, isq:displacement).
 quantity_parent_(radius_of_curvature, isq:radius).
 quantity_parent_(curvature, 1/isq:radius_of_curvature).
-quantity_parent_(volume, isq:length^3).
+quantity_parent_(volume, isq:length**3).
 quantity_parent_(phase_angle, isq:angular_measure).
 quantity_parent_(speed, isq:length / isq:time).
 quantity_parent_(acceleration, isq:velocity / isq:duration).
@@ -60,7 +60,7 @@ quantity_parent_(phase_coefficient, isq:phase_angle / isq:path_length).
 quantity_parent_(propagation_coefficient, 1/isq:length).
 
 % mechanics
-quantity_parent_(energy, isq:mass*isq:length^2/isq:time^2).
+quantity_parent_(energy, isq:mass*isq:length**2/isq:time**2).
 quantity_parent_(mass_density, isq:mass / isq:volume).
 quantity_parent_(specific_volume, 1/isq:mass_density).
 quantity_parent_(relative_mass_density, isq:mass_density / isq:mass_density).
@@ -83,11 +83,11 @@ quantity_parent_(modulus_of_elasticity, isq:normal_stress / isq:relative_linear_
 quantity_parent_(modulus_of_rigidity, isq:shear_stress / isq:shear_strain).
 quantity_parent_(modulus_of_compression, isq:pressure / isq:relative_volume_strain).
 quantity_parent_(compressibility, 1/isq:volume * (isq:volume / isq:pressure)).
-quantity_parent_(second_axial_moment_of_area, isq:radial_distance^2 * isq:area).
-quantity_parent_(second_polar_moment_of_area, isq:radial_distance^2 * isq:area).
+quantity_parent_(second_axial_moment_of_area, isq:radial_distance**2 * isq:area).
+quantity_parent_(second_polar_moment_of_area, isq:radial_distance**2 * isq:area).
 quantity_parent_(section_modulus, isq:second_axial_moment_of_area / isq:radial_distance).
 quantity_parent_(kinematic_viscosity, isq:dynamic_viscosity / isq:mass_density).
-quantity_parent_(power, isq:mass* isq:length^2 / isq:time^3).
+quantity_parent_(power, isq:mass* isq:length**2 / isq:time**3).
 quantity_parent_(mechanical_energy, isq:energy).
 quantity_parent_(potential_energy, isq:mechanical_energy).
 quantity_parent_(mechanical_efficiency, isq:mechanical_power / isq:mechanical_power).
@@ -140,16 +140,16 @@ quantity_parent(Alias, Parent) :-
    System:quantity_parent(Quantity, Parent).
 
 quantity_formula_(angular_measure, isq:arc_length/isq:radius).
-quantity_formula_(solid_angular_measure, isq:area/isq:radius^2).
+quantity_formula_(solid_angular_measure, isq:area/isq:radius**2).
 quantity_formula_(rotational_displacement, isq:path_length / isq:radius).
 quantity_formula_(velocity, isq:displacement / isq:duration).
 quantity_formula_(weight, isq:mass* isq:acceleration_of_free_fall).
 quantity_formula_(poisson_number, isq:width / isq:length).
-quantity_formula_(kinetic_energy, isq:mass* isq:speed^2).
+quantity_formula_(kinetic_energy, isq:mass* isq:speed**2).
 quantity_formula_(shear_strain, isq:displacement / isq:thickness).
 quantity_formula_(static_friction_coefficient, isq:static_friction_force / isq:force).
 quantity_formula_(kinetic_friction_factor, isq:kinetic_friction_force / isq:force).
-quantity_formula_(drag_coefficient, isq:drag_force / (isq:mass_density * isq:speed^2 * isq:area)).
+quantity_formula_(drag_coefficient, isq:drag_force / (isq:mass_density * isq:speed**2 * isq:area)).
 quantity_formula_(mechanical_power, isq:force* isq:velocity).
 quantity_formula_(logarithmic_decrement, isq:damping_coefficient* isq:period_duration).
 

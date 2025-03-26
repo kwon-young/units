@@ -19,7 +19,7 @@ Here is a quick preview of what is possible:
 ?- qeval(2 * km / h * (2 * h) =:= 4 * km).
 ?- qeval(2 * km / (2 * km / h) =:= 1 * h).
 
-?- qeval(2 * m * (3 * m) =:= 6 * m^2).
+?- qeval(2 * m * (3 * m) =:= 6 * m**2).
 
 ?- qeval(10 * km / (5 * km) =:= 2).
 

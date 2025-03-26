@@ -456,14 +456,21 @@ eval_(A^N, R) =>
 eval_(in(Expr, Unit), R) =>
    eval_(Expr, M),
    eval_(Unit, Q),
-   (  common_quantity(Q.q, M.q, _)
+   (  implicitly_convertible(M.q, Q.q)
    -> common_unit(M.u, F1, Q.u, F2, _),
       normalize(M.v*F1/F2, V1),
       V is V1,
       R = q{v: V, q: M.q, u: Q.u}
-   ;  domain_error(M, Unit)
+   ;  domain_error(M.q, Q.q)
    ).
 eval_(as(Expr, Quantity), R) =>
+   eval_(Expr, M),
+   quantity_call(quantity, Quantity),
+   (  implicitly_convertible(M.q, Quantity)
+   -> R = M.put(q, Quantity)
+   ;  domain_error(M.q, Quantity)
+   ).
+eval_(force_as(Expr, Quantity), R) =>
    eval_(Expr, M),
    quantity_call(quantity, Quantity),
    (  explicitly_convertible(M.q, Quantity)

@@ -396,6 +396,9 @@ normalize_kind(A*kind(B), R) =>
 normalize_kind(A, R) =>
    normalize(A, R).
 
+qeval((A, B)) =>
+   qeval(A),
+   qeval(B).
 qeval(Expr) =>
    eval_(Expr, Q),
    call(Q.v).

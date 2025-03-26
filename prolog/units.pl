@@ -181,6 +181,14 @@ quantity_kind_(Kind, R) =>
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind_, Quantity, Kind).
 
+same_kind(Q1, Q2) :-
+   derived_quantity_kind(Q1, K1),
+   derived_quantity_kind(Q2, K2),
+   common_quantity(K1, K2, K),
+   (  (K1 == K ; K2 == K)
+   -> true
+   ).
+
 kind_ancestor(Kind, Ancestor) :-
    quantity_call(quantity_parent, Kind, Parent),
    derived_quantity_kind(Parent, Ancestor).
@@ -356,7 +364,7 @@ comparable(AB, R) :-
    AB =.. [Op, A, B],
    eval_(A, A1),
    eval_(B, B1),
-   (  common_quantity(A1.q, B1.q, Q)
+   (  same_kind(A1.q, B1.q), common_quantity(A1.q, B1.q, Q)
    -> common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U),
       V =.. [Op, AV, BV],
       R = q{v: V, u: U, q: Q}
@@ -562,6 +570,12 @@ test('qeval', [forall(qeval_data(Expr))]) :-
 fail_qeval_data(1001 / (1 * (si:second)) =:= 1 * (si:kilo(hertz))).
 
 test('fail_qeval', [forall(fail_qeval_data(Expr)), fail]) :-
+   qeval(Expr).
+
+error_qeval_data(si:hertz =:= si:becquerel).
+error_qeval_data(_ is si:hertz + si:becquerel).
+
+test('error_qeval', [forall(error_qeval_data(Expr)), error(domain_error(_, _))]) :-
    qeval(Expr).
 
 implicitly_convertible_data(isq:width, isq:length).

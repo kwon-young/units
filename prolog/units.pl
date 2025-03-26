@@ -1,5 +1,6 @@
 :- module(units, [qeval/1, qmust_be/2]).
 :- reexport([units/units_utils]).
+:- reexport([units/q]).
 
 user:portray(Q) :-
    is_dict(Q, q),

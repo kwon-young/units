@@ -1,4 +1,4 @@
-:- module(units, [qeval/1, qmust_be/2, eval_/2]).
+:- module(units, [qeval/1, qmust_be/2]).
 :- reexport([units/units_utils]).
 
 user:portray(Q) :-

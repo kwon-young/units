@@ -229,10 +229,5 @@ quantity(Quantity) :-
 
 :- table kind/1.
 
-kind_(angular_measure).
-kind_(solid_angular_measure).
-kind(Kind) :-
-   kind_(Kind).
-kind(Alias) :-
-   alias(Alias, System:Kind),
-   System:kind(Kind).
+kind(angular_measure).
+kind(solid_angular_measure).

@@ -125,17 +125,17 @@ derived_quantity(_) => fail.
 :- table root/1.
 
 root(BaseQuantity) :-
-   quantity_call(base_dimension, BaseQuantity, _).
+   quantity_call(base_dimension_, BaseQuantity, _).
 root(Quantity) :-
-   quantity_call(quantity_parent, Quantity, DerivedQuantity),
+   quantity_call(quantity_parent_, Quantity, DerivedQuantity),
    derived_quantity(DerivedQuantity).
 
 :- table kind/1.
 
 kind(Root) :-
    quantity_call(kind, Root).
-kind(Root) :-
-   root(Root).
+kind(Kind) :-
+   root(Kind).
 
 :- table quantity_kind/2.
 

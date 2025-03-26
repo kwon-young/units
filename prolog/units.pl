@@ -499,14 +499,18 @@ eval_(UnitSymbol, R), unit_call(unit, Unit, UnitSymbol) =>
    unit_kind(Unit, Kind),
    R = q{v: 1, q: Kind, u: Unit}.
 eval_(QuantityExpr[UnitExpr], R) =>
-   eval_(QuantityExpr, Quantity),
+   eval_(QuantityExpr, R),
    eval_(UnitExpr, Unit),
-   implicitly_convertible(Unit.q, Quantity.q),
-   R = q{v: 1, q: Quantity.q, u: Unit.u}.
+   (  implicitly_convertible(Unit.q, R.q)
+   -> true
+   ;  domain_error(Unit.q, R.q)
+   ),
+   R.v = Unit.v,
+   R.u = Unit.u.
 eval_(Quantity, R), quantity_call(quantity, Quantity) =>
-   R = q{v: 1, q: Quantity, u: 1}.
+   R = q{v: _, q: Quantity, u: _}.
 eval_(kind(Quantity), R), quantity_call(quantity, Quantity) =>
-   R = q{v: 1, q: kind(Quantity), u: 1}.
+   R = q{v: _, q: kind(Quantity), u: _}.
 eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>

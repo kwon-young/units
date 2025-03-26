@@ -234,9 +234,14 @@ character_op(isq:vector^_, isq:vector).
 
 implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
-   common_quantity(From, NormalizedTo, NormalizedTo),
-   (  Explicit == false, quantity_kind(From, FromKind), quantity_call(kind_, FromKind)
-   -> common_quantity(FromKind, NormalizedTo, FromKind)
+   mapexpr(quantity_call(alias), NormalizedTo, AliasNormalizedTo),
+   common_quantity(From, AliasNormalizedTo, CommonQuantity),
+   (  AliasNormalizedTo = kind(_)
+   -> CommonQuantity = From
+   ;  CommonQuantity = AliasNormalizedTo
+   ),
+   (  Explicit == false, quantity_kind(From, FromKind), quantity_call(kind, FromKind)
+   -> common_quantity(FromKind, AliasNormalizedTo, FromKind)
    ;  true
    ),
    !.
@@ -644,12 +649,11 @@ test('in as') :-
    qmust_be(isq:speed[international:inch/si:hour], Speed).
 
 test('acceleration') :-
-   qeval(Speed is 60 * isq:speed[km/h]),
+   qeval(Speed is 60 * isq:velocity[km/h]),
    qeval(Duration is 8 * s),
-   qeval(A is (Speed / Duration in m/s^2)),
-   qmust_be((isq:speed/isq:time)[si:metre/si:second^2], A),
-   qeval(Acceleration is A as isq:acceleration),
-   qmust_be(isq:acceleration[si:metre/si:second^2], Acceleration).
+   qeval(A is (Speed / Duration) as isq:acceleration),
+   qeval(B is A in m/s^2),
+   qmust_be(isq:acceleration[si:metre/si:second^2], B).
 
 test('clpBNR') :-
    qeval({A * inch == 1 * metre}),

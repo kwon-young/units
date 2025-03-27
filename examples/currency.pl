@@ -1,5 +1,4 @@
-% :- use_module(library(units)).
-:- use_module("units.pl").
+:- use_module(library(units)).
 
 units:quantity_dimension(currency, '$').
 
@@ -13,14 +12,13 @@ exchange_rate(From, To, Rate) :-
    % user code to get real currency conversion value
    qeval(Rate is 0.9319664492078285 *To/From).
 
-exchange_to(From, To) :-
-   exchange_rate(From.u, To.u, Rate),
+exchange_to(From, ToUnit, To) :-
+   exchange_rate(From.u, ToUnit, Rate),
    qeval(To is Rate * From).
 
 main :-
    qeval(FromUsd is 100*usd),
-   ToEuro = q{u: euro, q: kind_of(currency), v: _},
-   exchange_to(FromUsd, ToEuro),
+   exchange_to(FromUsd, euro, ToEuro),
    format("~p -> ~p~n", [FromUsd, ToEuro]).
    % qeval(_ is FromUsd + ToEuro).
    % ERROR: Domain error: `us_dollar' expected, found `euro'

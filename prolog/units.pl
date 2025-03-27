@@ -405,9 +405,11 @@ comparable(AB, R) :-
    eval_(A, A1),
    eval_(B, B1),
    (  same_kind(A1.q, B1.q), common_quantity(A1.q, B1.q, Q)
-   -> common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U),
-      V =.. [Op, AV, BV],
-      R = q{v: V, u: U, q: Q}
+   -> (  common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U)
+      -> V =.. [Op, AV, BV],
+         R = q{v: V, u: U, q: Q}
+      ;  domain_error(A1.u, B1.u)
+      )
    ;  domain_error(A1, B1)
    ).
 

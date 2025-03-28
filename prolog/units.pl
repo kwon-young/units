@@ -40,6 +40,9 @@ user:portray(Q) :-
 
 parse(A*B) ==>
    parse(A), parse(B).
+parse(1/B) ==>
+   { phrase(parse(B), L) },
+   sequence(inverse, L).
 parse(A/B) ==>
    parse(A),
    { phrase(parse(B), L) },
@@ -65,11 +68,13 @@ aggregate(L, L2) :-
    maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L1),
    simplify(L1, L2).
 
-identity(_-0, _) => fail.
-identity(1-_, _) => fail.
-identity(A, R) => R = A.
+identity(_-0) => true.
+identity(1-_) => true.
+identity(_) => fail.
+not_identity(A, A) :-
+   \+ identity(A).
 simplify(L, L1) :-
-   convlist(identity, L, L1).
+   convlist(not_identity, L, L1).
 
 num_denom([], Denom, Expr) :-
    denom(Denom, 1, Expr).
@@ -107,6 +112,16 @@ parse_normalize_factors(In, L3) :-
 normalize_factors(L, L2) :-
    msort(L, L1),
    aggregate(L1, L2).
+
+:- meta_predicate rewriteexpr(2, ?, ?).
+
+rewriteexpr(G, A, A1) :-
+   call(G, A, A1).
+rewriteexpr(G, A, A1) :-
+   A =.. [Name | Args],
+   select(B, Args, B1, Args1),
+   rewriteexpr(G, B, B1),
+   A1 =.. [Name | Args1].
 
 :- meta_predicate mapexpr(2, ?, ?).
 
@@ -171,14 +186,14 @@ common_factors(L1, R1, Type, L, N, L2, R2) :-
    expand_either_factors(Unit1Only, R11, Type, R, N, Unit2Only, R22).
 expand_either_factors([], [], _, [], _-N, [], []) :-
    setarg(1, N, no).
-expand_either_factors([H1 | L1], R1, Type, L, Limit-N, L2, R2) :-
+expand_either_factors(L1, R1, Type, L, Limit-N, L2, R2) :-
    (  Limit > 0
    -> Limit1 is Limit - 1
    ;  nb_setarg(1, N, depth_limit_exceeded),
       fail
    ),
-   (  phrase(select_factor([H1 | L1], R1, Type, L, Limit1-N), L2, R2)
-   ;  phrase(select_factor(L2, R2, Type, L, Limit1-N), [H1 | L1], R1)
+   (  phrase(select_factor(L1, R1, Type, L, Limit1-N), L2, R2)
+   ;  phrase(select_factor(L2, R2, Type, L, Limit1-N), L1, R1)
    ).
 select_factor(L1, R1, Type, L, N) -->
    select(A),
@@ -259,22 +274,61 @@ quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
    root_kind(Kind).
 quantity_kind(Quantity, Kind) :-
-   alias_quantity_parent(Quantity, Parent),
+   alias_or_quantity_parent(Quantity, Parent),
    quantity_kind(Parent, Kind).
 
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
 
-common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
-   common_quantity(Q1, Q2, Q3),
-   (  (Q1 == Q3 ; Q2 == Q3)
-   -> Q = kind_of(Q3)
-   ;  Q = Q3
+alias_or_quantity_parent(Q, Q1) :-
+   (  alias_quantity_parent(Q, Q1)
+   ;  alias_quantity(Q, Q1)
    ).
+
+simplify_kind(Q, R) :-
+   phrase(parse(Q), L),
+   msort(L, L1),
+   group_pairs_by_key(L1, Groups),
+   maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L2),
+   partition(identity, L2, [_|_], L3),
+   % L3 = [_|_],
+   generate_expression(L3, R).
+
+rewrite_kind(Q, R) :-
+   rewriteexpr(alias_or_quantity_parent, Q, Q1),
+   simplify_kind(Q1, Q2),
+   !,
+   (  rewrite_kind(Q2, R)
+   ;  Q2 = R
+   ).
+rewrite_kind(Q, R) :-
+   rewriteexpr(alias_or_quantity_parent, Q, Q1),
+   rewrite_kind(Q1, R).
+optional_rewrite_kind(Q, R) :-
+   (  rewrite_kind(Q, K)
+   -> derived_quantity_kind(K, R)
+   ;  Q = R
+   ).
+
+common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
+   optional_rewrite_kind(Q1, K1),
+   optional_rewrite_kind(Q2, K2),
+   common_quantity(K1, K2, Q3),
+   (  K1 == Q3 % Q1 is the least specific one
+   -> Q = kind_of(K2) % the common kind_of should be the most specific one
+   ;  K2 == Q3
+   -> Q = kind_of(K1)
+   ;  Q = Q3 % Q1 an Q2 are not directly related, their common ancestor is not a kind_of
+   ).
+   % (  (Q1 == Q3 ; Q2 == Q3)
+   % -> Q = kind_of(Q3)
+   % ;  Q = Q3
+   % ).
 common_quantity(kind_of(Q1), Q2, Q) =>
-   common_quantity(Q1, Q2, Q3),
-   (  Q1 == Q3
-   -> Q = Q2
+   optional_rewrite_kind(Q1, K1),
+   common_quantity(K1, Q2, Q3),
+   (  K1 == Q3 % Q1 is more generic than Q2
+   -> Q = Q2 % common quantity should by Q2
    ;  Q = Q3
    ).
 common_quantity(Q1, kind_of(Q2), Q) =>
@@ -293,18 +347,18 @@ same_kind(Q1, Q2) :-
 %  From is implicitly convertible to To if:
 %  
 %  * From is a direct descendent of To: i.e. common_quantity(From, To, To)
-%  * 
+%  * the path from From to To does not cross a kind.
 %
 %  Exceptions:
 %
-%  * if To is a kind_of, then common_quantity(From, To, From)
+%  * if To is a kind_of and From is not a kind_of, then common_quantity(From, To, From)
 %
 %
 implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
    mapexpr(alias_quantity, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
-   (  AliasNormalizedTo = kind_of(_)
+   (  \+ subsumes_term(kind_of(_), From), AliasNormalizedTo = kind_of(_)
    -> CommonQuantity = From
    ;  CommonQuantity = AliasNormalizedTo
    ),
@@ -599,6 +653,8 @@ implicitly_convertible_data(kind_of(isq:length), isq:height).
 implicitly_convertible_data(isq:acceleration, isq:speed/isq:time).
 implicitly_convertible_data(kind_of(isq:length/isq:time**2), isq:acceleration).
 implicitly_convertible_data(kind_of(isq:length/isq:time**2), isq:velocity/isq:duration).
+implicitly_convertible_data(kind_of(isq:time*isq:frequency), isq:rotation).
+implicitly_convertible_data(kind_of(isq:time*isq:frequency), kind_of(isq:rotation)).
 
 test('implicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    implicitly_convertible(Q1, Q2).
@@ -613,13 +669,18 @@ explicitly_convertible_data(isq:mass*isq:length**2/isq:time**2, isq:mechanical_e
 explicitly_convertible_data(isq:angular_measure, 1).
 explicitly_convertible_data(isq:speed/isq:time, isq:acceleration).
 
-test('not_implicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2)), fail]) :-
+not_implicitly_convertible_data(isq:time*isq:frequency, isq:rotation).
+
+test('not_implicitly_convertible(explicit_data)', [forall(explicitly_convertible_data(Q1, Q2)), fail]) :-
+   implicitly_convertible(Q1, Q2).
+test('not_implicitly_convertible', [forall(not_implicitly_convertible_data(Q1, Q2)), fail]) :-
    implicitly_convertible(Q1, Q2).
 
 common_quantity_data(isq:width, isq:height, isq:length).
 common_quantity_data(isq:thickness, isq:radius, isq:width).
 common_quantity_data(isq:distance, isq:path_length, isq:path_length).
 common_quantity_data(1, 1, 1).
+common_quantity_data(1, isq:rotation, 1).
 common_quantity_data(kind_of(isq:length), kind_of(isq:length), kind_of(isq:length)).
 common_quantity_data(isq:width, kind_of(isq:length), isq:width).
 
@@ -635,6 +696,7 @@ test('explicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2))]) :-
 not_explicitly_convertible_data(isq:height, isq:width).
 not_explicitly_convertible_data(isq:time, isq:length).
 not_explicitly_convertible_data(isq:frequency, isq:activity).
+not_explicitly_convertible_data(kind_of(isq:frequency), kind_of(isq:activity)).
 not_explicitly_convertible_data(isq:mass*isq:height**2/isq:time**2, isq:mechanical_energy).
 
 test('not_explicitly_convertible', [forall(not_explicitly_convertible_data(Q1, Q2)), fail]) :-
@@ -677,5 +739,8 @@ test('clpBNR') :-
    B == 2500,
    qeval({C is 1^2}),
    C == q{q:1, u:1, v:1}.
+
+test('quantity_kind') :-
+   quantity_kind(isq:duration, isq:time).
 
 :- end_tests(units).

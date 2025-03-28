@@ -309,8 +309,7 @@ implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
    mapexpr(alias_quantity, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
-   (  AliasNormalizedTo = kind_of(_)
-   -> CommonQuantity = From
+   (  AliasNormalizedTo = kind_of(_), CommonQuantity = From
    ;  CommonQuantity = AliasNormalizedTo
    ),
    (  Explicit == false, quantity_kind(From, FromKind), kind(FromKind)

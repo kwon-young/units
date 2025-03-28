@@ -606,6 +606,8 @@ implicitly_convertible_data(kind_of(isq:length/isq:time**2), isq:acceleration).
 implicitly_convertible_data(kind_of(isq:length/isq:time**2), isq:velocity/isq:duration).
 implicitly_convertible_data(kind_of(isq:time*isq:frequency), isq:rotation).
 implicitly_convertible_data(kind_of(isq:time*isq:frequency), kind_of(isq:rotation)).
+implicitly_convertible_data(kind_of(isq:time*isq:frequency), kind_of(isq:angular_measure)).
+implicitly_convertible_data(kind_of(isq:rotation/isq:frequency), kind_of(isq:time)).
 
 test('implicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    implicitly_convertible(Q1, Q2).

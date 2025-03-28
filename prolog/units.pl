@@ -259,11 +259,16 @@ quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
    root_kind(Kind).
 quantity_kind(Quantity, Kind) :-
-   alias_quantity_parent(Quantity, Parent),
+   alias_or_quantity_parent(Quantity, Parent),
    quantity_kind(Parent, Kind).
 
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
+
+alias_or_quantity_parent(Q, Q1) :-
+   (  alias_quantity_parent(Q, Q1)
+   ;  alias_quantity(Q, Q1)
+   ).
 
 common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
    common_quantity(Q1, Q2, Q3),

@@ -38,10 +38,10 @@
 user:portray(Q) :-
    is_dict(Q, q),
    get_dict(v, Q, V),
-   get_dict(q, Q, Q),
+   get_dict(q, Q, Quantity),
    get_dict(u, Q, U),
    !,
-   format("~p * ~p[~p]", [V, Q, U]).
+   format("~p * ~p[~p]", [V, Quantity, U]).
 
 is_quantity(Term) :-
    is_dict(Term, q),
@@ -644,6 +644,8 @@ eval_(kind_of(Kind), R), derived_root_kind(Kind) =>
    R = q{v: _, q: kind_of(Kind), u: _}.
 eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
+eval_(random_float, R) =>
+   R = q{v: random_float, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.
 

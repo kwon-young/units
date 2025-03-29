@@ -10,7 +10,7 @@ units:unit_kind(us_dollar, currency).
 
 exchange_rate(From, To, Rate) :-
    % user code to get real currency conversion value
-   qeval(Rate is 0.9319664492078285 *To/From).
+   qeval(Rate is random_float *To/From).
 
 exchange_to(From, ToUnit, To) :-
    exchange_rate(From.u, ToUnit, Rate),
@@ -19,6 +19,6 @@ exchange_to(From, ToUnit, To) :-
 main :-
    qeval(FromUsd is 100*usd),
    exchange_to(FromUsd, euro, ToEuro),
-   format("~p -> ~p~n", [FromUsd, ToEuro]).
-   % qeval(_ is FromUsd + ToEuro).
+   format("~p -> ~p~n", [FromUsd, ToEuro]),
+   qeval(_ is FromUsd + ToEuro).
    % ERROR: Domain error: `us_dollar' expected, found `euro'

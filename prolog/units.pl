@@ -241,6 +241,43 @@ root(Quantity) :-
    quantity_parent(Quantity, DerivedQuantity),
    derived_quantity(DerivedQuantity).
 
+:- table quantity_dimensions_/2.
+
+quantity_dimensions_(Quantity, Quantity) :-
+   quantity_dimension(Quantity, _).
+quantity_dimensions_(Alias, Dimension) :-
+   alias_quantity(Alias, Quantity),
+   quantity_dimensions_(Quantity, Dimension).
+quantity_dimensions_(Quantity, Dimensions) :-
+   quantity_parent(Quantity, Parent),
+   quantity_dimensions_(Parent, Dimensions).
+quantity_dimensions_(Quantity, Dimensions) :-
+   derived_quantity(Quantity),
+   mapexpr(quantity_dimensions_, Quantity, Dimensions).
+quantity_dimensions(Quantity, Dimensions) :-
+   quantity_dimensions_(Quantity, Dimension),
+   parse_normalize_factors(Dimension, Dimensions).
+
+simplify_dimensions(Quantity, R) :-
+   parse_normalize_factors(Quantity, Factors),
+   maplist([F, Q]>>generate_expression([F], Q), Factors, Quantities),
+   maplist(quantity_dimensions, Quantities, Dimensions),
+   pairs_keys_values(Pairs, Factors, Dimensions),
+   phrase(simplify_dimension_pairs, Pairs, SimplifiedPairs),
+   pairs_keys(SimplifiedPairs, SimplifiedFactors),
+   generate_expression(SimplifiedFactors, R).
+simplify_dimension_pairs -->
+   select(_-A),
+   { maplist(is_inverse, A, B) },
+   select(_-B),
+   !,
+   simplify_dimension_pairs.
+simplify_dimension_pairs -->
+   [].
+
+is_inverse(Q-N1, Q-N2) :-
+   N2 is -N1.
+
 :- table root_kind/1.
 
 root_kind(Kind) :-
@@ -271,14 +308,19 @@ alias_or_quantity_parent(Q, Q1) :-
    ).
 
 common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
-   common_quantity(Q1, Q2, Q3),
-   (  (Q1 == Q3 ; Q2 == Q3)
-   -> Q = kind_of(Q3)
+   simplify_dimensions(Q1, K1),
+   simplify_dimensions(Q2, K2),
+   common_quantity(K1, K2, Q3),
+   (  K1 == Q3
+   -> Q = kind_of(Q2)
+   ;  K2 == Q3
+   -> Q = kind_of(Q1)
    ;  Q = Q3
    ).
 common_quantity(kind_of(Q1), Q2, Q) =>
-   common_quantity(Q1, Q2, Q3),
-   (  Q1 == Q3
+   simplify_dimensions(Q1, K1),
+   common_quantity(K1, Q2, Q3),
+   (  K1 == Q3
    -> Q = Q2
    ;  Q = Q3
    ).

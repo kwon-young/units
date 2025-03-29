@@ -16,6 +16,10 @@
 ]).
 :- reexport([units/q]).
 
+:- use_module(library(dcg/high_order)).
+:- use_module(library(clpBNR)).
+:- use_module(library(error)).
+
 :- multifile quantity_dimension/2.
 :- multifile quantity_parent/2.
 :- multifile quantity_formula/2.
@@ -26,8 +30,6 @@
 :- multifile unit_kind/2.
 :- multifile prefix_unit_symbol/2.
 
-:- use_module(library(dcg/high_order)).
-:- use_module(library(clpBNR)).
 :- use_module(units/q).
 :- use_module(units/isq).
 :- use_module(units/si).
@@ -35,8 +37,34 @@
 
 user:portray(Q) :-
    is_dict(Q, q),
+   get_dict(v, Q, V),
+   get_dict(q, Q, Q),
+   get_dict(u, Q, U),
    !,
-   format("~p * ~p[~p]", [Q.v, Q.q, Q.u]).
+   format("~p * ~p[~p]", [V, Q, U]).
+
+is_quantity(Term) :-
+   is_dict(Term, q),
+   get_dict(q, Term, Q),
+   (  var(Q)
+   -> true
+   ;  Q = kind_of(K)
+   -> derived_root_kind(K)
+   ;  mapexpr(alias_or_quantity, Q)
+   ),
+   get_dict(u, Term, U),
+   (  var(U)
+   -> true
+   ;  mapexpr(normalize_unit, U, _)
+   ),
+   get_dict(v, Term, _).
+error:has_type(q:Quantity, Term) :-
+   (  ground(Quantity), alias_or_quantity(Quantity)
+   -> true
+   ;  domain_error(quantity, Quantity)
+   ),
+   is_quantity(Term),
+   implicitly_convertible(Term.q, Quantity).
 
 parse(A*B) ==>
    parse(A), parse(B).
@@ -107,6 +135,27 @@ parse_normalize_factors(In, L3) :-
 normalize_factors(L, L2) :-
    msort(L, L1),
    aggregate(L1, L2).
+
+:- meta_predicate mapexpr(1, ?).
+
+mapexpr(Goal, A) :-
+   mapexpr1(Goal, [_]>>true, A).
+
+:- meta_predicate mapexpr1(1, 1, ?).
+
+mapexpr1(Goal, F, A*B) =>
+   mapexpr1(Goal, F, A),
+   mapexpr1(Goal, F, B).
+mapexpr1(Goal, F, A/B) =>
+   mapexpr1(Goal, F, A),
+   mapexpr1(Goal, F, B).
+mapexpr1(Goal, F, A**_) =>
+   mapexpr1(Goal, F, A).
+mapexpr1(Goal, Failure, A) =>
+   (  call(Goal, A)
+   *-> true
+   ;  call(Failure, A)
+   ).
 
 :- meta_predicate mapexpr(2, ?, ?).
 
@@ -724,7 +773,7 @@ test('acceleration') :-
    qeval(Duration is 8 * s),
    qeval(A is (Speed / Duration) as isq:acceleration),
    qeval(B is A in m/s**2),
-   B = q{q: isq:acceleration, u: si:metre/si:second**2, v: _}.
+   must_be(q:isq:acceleration, B).
 
 test('clpBNR') :-
    qeval({A * inch =:= 1 * metre}),

@@ -1,5 +1,4 @@
-% :- use_module(library(units)).
-:- use_module("prolog/units.pl").
+:- use_module(library(units)).
 
 units:kind(ni:beat_count).
 units:kind(ni:midi_clock).

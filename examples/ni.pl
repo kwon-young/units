@@ -1,4 +1,5 @@
-:- use_module(library(units)).
+% :- use_module(library(units)).
+:- use_module("prolog/units.pl").
 
 units:kind(ni:beat_count).
 units:kind(ni:midi_clock).
@@ -53,7 +54,19 @@ main :-
       SampleDuration1 is (1/Sr1) in ms,
       SampleDuration2 is (1/Sr2) in ms,
       RampTime is 35 * ms,
-      RampSamples1 is force_as(RampTime * Sr1, ni:sample_count)
+      RampSamples1 is (RampTime * Sr1 in sample) as ni:sample_count,
+      RampSamples2 is (RampTime * Sr2 in sample) as ni:sample_count,
+
+      SampleValue is -0.4 * pcm,
+      Power1 is SampleValue*SampleValue,
+      Power2 is -0.2 * pcm**2,
+      Tempo is 110 * bpm,
+      ReverbBeats is 1*dotted_quarter_note,
+      ReverbTime is ReverbBeats / Tempo,
+      PulsePerQuarter is 960*ppqn,
+      TransportPosition is 15836 * midi_pulse,
+      TransportBeats is TransportPosition / PulsePerQuarter in quarter_note,
+      TransportTime is TransportBeats / Tempo in s
    )),
    format("Sample rate 1 is: ~p", [Sr1]), nl,
    format("Sample rate 2 is: ~p", [Sr2]), nl,
@@ -62,4 +75,16 @@ main :-
    format("One sample @ ~p is ~p", [Sr1, SampleDuration1]), nl,
    format("One sample @ ~p is ~p", [Sr2, SampleDuration2]), nl,
    format("~p is ~p @ ~p", [RampTime, RampSamples1, Sr1]), nl,
+   format("~p is ~p @ ~p", [RampTime, RampSamples2, Sr2]), nl,
+   nl,
+   format("SampleValue is ~p", [SampleValue]), nl,
+   format("Power1 is ~p", [Power1]), nl,
+   format("Power2 is ~p", [Power2]), nl,
+   format("Tempo is ~p", [Tempo]), nl,
+   format("ReverbBeats is ~p", [ReverbBeats]), nl,
+   format("ReverbTime is ~p", [ReverbTime.in(s)]), nl,
+   format("PulsePerQuarter is ~p", [PulsePerQuarter]), nl,
+   format("TransportPosition is ~p", [TransportPosition]), nl,
+   format("TransportBeats is ~p", [TransportBeats]), nl,
+   format("TransportTime is ~p", [TransportTime]), nl,
    true.

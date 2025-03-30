@@ -622,6 +622,12 @@ eval_(cast(Expr, Quantity), R), alias_or_quantity(Quantity) =>
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
+eval_(kind_of(Kind), R), derived_root_kind(Kind) =>
+   R = q{v: _, q: kind_of(Kind), u: _}.
+eval_(pi, R) =>
+   R = q{v: pi, q: 1, u: 1}.
+eval_(random_float, R) =>
+   R = q{v: random_float, q: 1, u: 1}.
 eval_(X, R), var(X) =>
    R = q{v: X, q: 1, u: 1}.
 eval_(UnitOrSymbol, R), normalize_unit(UnitOrSymbol, Unit) =>
@@ -640,12 +646,6 @@ eval_(N, R), number(N) =>
    R = q{v: N, q: 1, u: 1}.
 eval_(Quantity, R), alias_or_quantity(Quantity) =>
    R = q{v: _, q: Quantity, u: _}.
-eval_(kind_of(Kind), R), derived_root_kind(Kind) =>
-   R = q{v: _, q: kind_of(Kind), u: _}.
-eval_(pi, R) =>
-   R = q{v: pi, q: 1, u: 1}.
-eval_(random_float, R) =>
-   R = q{v: random_float, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.
 

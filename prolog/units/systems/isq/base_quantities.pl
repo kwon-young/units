@@ -1,0 +1,16 @@
+:-module(base_quantities,[]).
+units:alias(isq:duration,isq:time).
+units:dimension_symbol(isq:dim_length,'L').
+units:dimension_symbol(isq:dim_mass,'M').
+units:dimension_symbol(isq:dim_time,'T').
+units:dimension_symbol(isq:dim_electric_current,'I').
+units:dimension_symbol(isq:dim_thermodynamic_temperature,'Θ').
+units:dimension_symbol(isq:dim_amount_of_substance,'N').
+units:dimension_symbol(isq:dim_luminous_intensity,'J').
+units:quantity_parent(isq:length,isq:dim_length).
+units:quantity_parent(isq:mass,isq:dim_mass).
+units:quantity_parent(isq:time,isq:dim_time).
+units:quantity_parent(isq:electric_current,isq:dim_electric_current).
+units:quantity_parent(isq:thermodynamic_temperature,isq:dim_thermodynamic_temperature).
+units:quantity_parent(isq:amount_of_substance,isq:dim_amount_of_substance).
+units:quantity_parent(isq:luminous_intensity,isq:dim_luminous_intensity).

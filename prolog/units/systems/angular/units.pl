@@ -1,0 +1,12 @@
+:-module(angular_units,[]).
+units:dimension_symbol(angular:dim_angle,'A').
+units:no_space_before_unit_symbol(angular:degree).
+units:no_space_before_unit_symbol(angular:gradian).
+units:quantity_parent(angular:angle,angular:dim_angle).
+units:quantity_parent(angular:solid_angle,(angular:angle)**2).
+units:unit_kind(angular:radian,angular:angle).
+units:unit_symbol(angular:radian,rad).
+units:unit_symbol_formula(angular:revolution,rev,2*pi*(angular:radian)).
+units:unit_symbol_formula(angular:degree,°,1/360*(angular:revolution)).
+units:unit_symbol_formula(angular:gradian,ᵍ,1/400*(angular:revolution)).
+units:unit_symbol_formula(angular:steradian,sr,(angular:radian)**2).

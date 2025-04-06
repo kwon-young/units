@@ -1,0 +1,9 @@
+:-module(binary_prefixes,[]).
+units:prefix(iec:kibi,'Ki',2**10).
+units:prefix(iec:mebi,'Mi',2**20).
+units:prefix(iec:gibi,'Gi',2**30).
+units:prefix(iec:tebi,'Ti',2**40).
+units:prefix(iec:pebi,'Pi',2**50).
+units:prefix(iec:exbi,'Ei',2**60).
+units:prefix(iec:zebi,'Zi',2**70).
+units:prefix(iec:yobi,'Yi',2**80).

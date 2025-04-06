@@ -1,0 +1,11 @@
+:-module(iec_units,[]).
+units:unit_kind(iec:volt_ampere_reactive_power,isq:reactive_power).
+units:unit_kind(iec:erlang,isq:traffic_intensity).
+units:unit_kind(iec:bit,isq:storage_capacity).
+units:unit_kind(iec:baud,isq:modulation_rate).
+units:unit_symbol(iec:erlang,'E').
+units:unit_symbol_formula(iec:volt_ampere_reactive_power,var,(si:volt)*(si:ampere)).
+units:unit_symbol_formula(iec:bit,bit,1).
+units:unit_symbol_formula(iec:octet,o,8*(iec:bit)).
+units:unit_symbol_formula(iec:byte,'B',8*(iec:bit)).
+units:unit_symbol_formula(iec:baud,'Bd',1/(si:second)).

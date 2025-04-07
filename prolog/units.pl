@@ -3,15 +3,22 @@
    op(600, xfx, in),
    op(100, yf,  []),
    op(99, xfy, :),
-   quantity_dimension/2,
-   quantity_parent/2,
-   quantity_formula/2,
-   alias_quantity/2,
+   alias/2,
+   dimension_symbol/2,
    kind/1,
+   quantity_character/2,
+   quantity_formula/2,
+   quantity_parent/2,
+
+   prefix/3,
+   absolute_point_origin/2,
+   no_space_before_unit_symbol/1,
+   prefix/3,
+   relative_point_origin/2,
+   unit_kind/2,
    unit_symbol/2,
    unit_symbol_formula/3,
-   unit_kind/2,
-   prefix_unit_symbol/2,
+
    qeval/1
 ]).
 :- reexport([units/q]).
@@ -20,20 +27,34 @@
 :- use_module(library(clpBNR)).
 :- use_module(library(error)).
 
-:- multifile quantity_dimension/2.
-:- multifile quantity_parent/2.
-:- multifile quantity_formula/2.
-:- multifile alias_quantity/2.
+:- multifile alias/2.
+:- multifile dimension_symbol/2.
 :- multifile kind/1.
+:- multifile quantity_character/2.
+:- multifile quantity_formula/2.
+:- multifile quantity_parent/2.
+
+:- multifile absolute_point_origin/2.
+:- multifile no_space_before_unit_symbol/1.
+:- multifile prefix/3.
+:- multifile relative_point_origin/2.
+:- multifile unit_kind/2.
 :- multifile unit_symbol/2.
 :- multifile unit_symbol_formula/3.
-:- multifile unit_kind/2.
-:- multifile prefix_unit_symbol/2.
+
+units:dimension_symbol(1, '').
 
 :- use_module(units/q).
-:- use_module(units/isq).
-:- use_module(units/si).
-:- use_module(units/international).
+:- use_module(units/systems/angular).
+:- use_module(units/systems/cgs).
+:- use_module(units/systems/hep).
+:- use_module(units/systems/iau).
+:- use_module(units/systems/iec).
+:- use_module(units/systems/imperial).
+:- use_module(units/systems/international).
+:- use_module(units/systems/isq).
+:- use_module(units/systems/si).
+:- use_module(units/systems/usc).
 
 user:portray(Q) :-
    is_dict(Q, q),
@@ -50,7 +71,7 @@ is_quantity(Term) :-
    -> true
    ;  Q = kind_of(K)
    -> derived_root_kind(K)
-   ;  mapexpr(alias_or_quantity, Q)
+   ;  mapexpr(alias_quantity, Q)
    ),
    get_dict(u, Term, U),
    (  var(U)
@@ -59,7 +80,7 @@ is_quantity(Term) :-
    ),
    get_dict(v, Term, _).
 error:has_type(q:Quantity, Term) :-
-   (  ground(Quantity), alias_or_quantity(Quantity)
+   (  ground(Quantity), alias_quantity(Quantity)
    -> true
    ;  domain_error(quantity, Quantity)
    ),
@@ -207,7 +228,7 @@ is_of(unit, U-_) :-
    unit(U, _).
 is_of(quantity, Q-_) :-
    ground(Q),
-   alias_or_quantity(Q).
+   alias_quantity(Q).
 
 common_factors(L1, R1, Type, L, N, L2, R2) :-
    partition(is_of(Type), L1, Unit1, Factor1),
@@ -241,76 +262,88 @@ expand_factor(Type, Unit-N, Factors) :-
    (  Type == unit
    -> unit(Unit, _, Formula)
    ;  Type == quantity,
-      (  alias_quantity(Unit, Formula)
-      ;  quantity_parent(Unit, Formula)
-      )
+      alias_or_quantity_parent(Unit, Formula)
    ),
    parse_normalize_factors(Formula**N, Factors).
-
-:- table alias_quantity_dimension/2.
-
-alias_quantity_dimension(Quantity, Symbol) :-
-   quantity_dimension(Quantity, Symbol).
-alias_quantity_dimension(Alias, Symbol) :-
-   alias_quantity(Alias, Quantity),
-   alias_quantity_dimension(Quantity, Symbol).
 
 :- table alias_quantity_parent/2.
 
 alias_quantity_parent(Quantity, Parent) :-
-   quantity_parent(Quantity, Parent).
+   quantity_parent(Quantity, Parent),
+   \+ dimension_symbol(Parent, _).
 alias_quantity_parent(Alias, Parent) :-
-   alias_quantity(Alias, Quantity),
+   alias(Alias, Quantity),
    alias_quantity_parent(Quantity, Parent).
 
-:- table alias_or_quantity/1.
-
-alias_or_quantity(Quantity) :-
-   alias_quantity_dimension(Quantity, _).
-alias_or_quantity(Quantity) :-
+alias_quantity(Quantity) :-
+   alias_base_quantity(Quantity).
+alias_quantity(Quantity) :-
    alias_quantity_parent(Quantity, _).
+
+alias_parent(Alias, Parent) :-
+   alias(Alias, Quantity),
+   alias_quantity_parent(Quantity, Parent).
+
+:- table alias_or_quantity_parent/2.
+
+alias_or_quantity_parent(Quantity, Parent) :-
+   quantity_parent(Quantity, Parent),
+   \+ dimension_symbol(Parent, _).
+alias_or_quantity_parent(Alias, Quantity) :-
+   alias(Alias, Quantity),
+   alias_quantity(Quantity).
 
 :- table alias_quantity_formula/2.
 
 alias_quantity_formula(Quantity, Formula) :-
    quantity_formula(Quantity, Formula).
 alias_quantity_formula(Alias, Formula) :-
-   alias_quantity(Alias, Quantity),
+   alias(Alias, Quantity),
    alias_quantity_formula(Quantity, Formula).
 
 derived_quantity(_*_).
 derived_quantity(_/_).
 derived_quantity(_**_).
 
+base_quantity(Quantity) :-
+   quantity_parent(Quantity, Dimension),
+   dimension_symbol(Dimension, _).
+
+:- table alias_base_quantity/1.
+
+alias_base_quantity(Quantity) :-
+   base_quantity(Quantity).
+alias_base_quantity(Alias) :-
+   alias(Alias, Quantity),
+   alias_base_quantity(Quantity).
+
 :- table root/1.
 
 root(BaseQuantity) :-
-   quantity_dimension(BaseQuantity, _).
+   base_quantity(BaseQuantity).
 root(Quantity) :-
    quantity_parent(Quantity, DerivedQuantity),
    derived_quantity(DerivedQuantity).
 
-:- table quantity_dimensions_/2.
+:- table quantity_dimensions/2.
 
-quantity_dimensions_(Quantity, Quantity) :-
-   quantity_dimension(Quantity, _).
-quantity_dimensions_(Alias, Dimension) :-
-   alias_quantity(Alias, Quantity),
-   quantity_dimensions_(Quantity, Dimension).
-quantity_dimensions_(Quantity, Dimensions) :-
-   quantity_parent(Quantity, Parent),
-   quantity_dimensions_(Parent, Dimensions).
-quantity_dimensions_(Quantity, Dimensions) :-
-   derived_quantity(Quantity),
-   mapexpr(quantity_dimensions_, Quantity, Dimensions).
+quantity_dimensions(Quantity, Quantity) :-
+   base_quantity(Quantity).
 quantity_dimensions(Quantity, Dimensions) :-
-   quantity_dimensions_(Quantity, Dimension),
+   alias_quantity_parent(Quantity, Parent),
+   quantity_dimensions(Parent, Dimensions).
+quantity_dimensions(Quantity, Dimensions) :-
+   derived_quantity(Quantity),
+   mapexpr(quantity_dimensions, Quantity, Dimensions).
+
+factors_dimensions(Factor, Dimensions) :-
+   generate_expression([Factor], Quantity),
+   quantity_dimensions(Quantity, Dimension),
    parse_normalize_factors(Dimension, Dimensions).
 
 simplify_dimensions(Quantity, R) :-
    parse_normalize_factors(Quantity, Factors),
-   maplist([F, Q]>>generate_expression([F], Q), Factors, Quantities),
-   maplist(quantity_dimensions, Quantities, Dimensions),
+   maplist(factors_dimensions, Factors, Dimensions),
    pairs_keys_values(Pairs, Factors, Dimensions),
    phrase(simplify_dimension_pairs, Pairs, SimplifiedPairs),
    pairs_keys(SimplifiedPairs, SimplifiedFactors),
@@ -345,16 +378,11 @@ quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
    root_kind(Kind).
 quantity_kind(Quantity, Kind) :-
-   alias_or_quantity_parent(Quantity, Parent),
+   alias_quantity_parent(Quantity, Parent),
    quantity_kind(Parent, Kind).
 
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
-
-alias_or_quantity_parent(Q, Q1) :-
-   (  alias_quantity_parent(Q, Q1)
-   ;  alias_quantity(Q, Q1)
-   ).
 
 common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
    simplify_dimensions(Q1, K1),
@@ -398,7 +426,7 @@ same_kind(Q1, Q2) :-
 %
 implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
-   mapexpr(alias_quantity, NormalizedTo, AliasNormalizedTo),
+   mapexpr(alias_parent, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
    (  AliasNormalizedTo = kind_of(_), CommonQuantity = From
    ;  CommonQuantity = AliasNormalizedTo
@@ -433,46 +461,62 @@ explicitly_convertible(From, To) :-
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From, true).
 
-normalize_unit(Unit, R), unit(Unit, _) =>
-   R = Unit.
-normalize_unit(Symbol, R), unit(Unit, Symbol) =>
-   R = Unit.
-normalize_unit(Unit, R), unit(Module:Unit, _) =>
-   R = Module:Unit.
-normalize_unit(Module:Symbol, R), unit(Module:Unit, Symbol) =>
-   R = Module:Unit.
-normalize_unit(Module:PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
-   R2 =.. [Prefix, R1],
-   R = Module:R2.
-normalize_unit(PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
-   R2 =.. [Prefix, R1],
-   R = Module:R2.
-normalize_unit(_, _) => fail.
+:- table alias_or_unit_symbol/2.
 
-:- table all_unit_symbol/2.
-
-all_unit_symbol(Unit, Symbol) :-
+alias_or_unit_symbol(Unit, Symbol) :-
    (  unit_symbol(Unit, Symbol)
    ;  unit_symbol_formula(Unit, Symbol, _)
    ).
+alias_or_unit_symbol(Alias, Symbol) :-
+   alias(Alias, Unit),
+   alias_or_unit_symbol(Unit, Symbol).
+
+:- table alias_unit_symbol_formula/3.
+
+alias_unit_symbol_formula(Unit, Symbol, Formula) :-
+   unit_symbol_formula(Unit, Symbol, Formula).
+alias_unit_symbol_formula(Alias, Symbol, Unit) :-
+   alias(Alias, Unit),
+   alias_or_unit_symbol(Unit, Symbol).
+
+:- table has_prefix/2.
+
+has_prefix(Module:PrefixUnit, Symbol) :-
+   prefix(Module:Prefix, PrefixSymbol, _),
+   PrefixUnit =.. [Prefix, Unit],
+   (  alias_or_unit_symbol(Unit, UnitSymbol),
+      atom_concat(PrefixSymbol, UnitSymbol, Symbol)
+   -> true
+   ;  domain_error("has_prefix", Module:PrefixUnit-Symbol)
+   ).
+has_prefix(Alias, Symbol) :-
+   alias(Alias, Unit),
+   has_prefix(Unit, Symbol).
+
+:- table prefix_unit_symbol_formula/3.
+
+prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
+   \+ compound(Symbol),
+   prefix(Module:Prefix, PrefixSymbol, PrefixFormula),
+   PrefixUnit =.. [Prefix, Unit],
+   alias_or_unit_symbol(Unit, UnitSymbol),
+   \+ has_prefix(Unit, UnitSymbol),
+   atom_concat(PrefixSymbol, UnitSymbol, Symbol).
+
+:- table alias_prefix_unit_symbol_formula/3.
+
+alias_prefix_unit_symbol_formula(PrefixUnit, Symbol, Formula) :-
+   prefix_unit_symbol_formula(PrefixUnit, Symbol, Formula).
+alias_prefix_unit_symbol_formula(Alias, Symbol, Formula) :-
+   alias(Alias, Unit),
+   alias_prefix_unit_symbol_formula(Unit, Symbol, Formula).
 
 :- table unit/3.
 
 unit(U, S, F) :-
-   unit_symbol_formula(U, S, F).
-unit(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
-   \+ compound(Symbol),
-   \+ prefix_unit_symbol(Module:PrefixUnit, Symbol),
-   prefix(Module:Prefix, PrefixSymbol, PrefixFormula),
-   PrefixUnit =.. [Prefix, Unit],
-   all_unit_symbol(Unit, UnitSymbol),
-   atom_concat(PrefixSymbol, UnitSymbol, Symbol).
+   (  alias_unit_symbol_formula(U, S, F)
+   ;  alias_prefix_unit_symbol_formula(U, S, F)
+   ).
 
 :- table unit/2.
 
@@ -505,8 +549,30 @@ comparable(AB, R) :-
          R = q{v: V, u: U, q: Q}
       ;  domain_error(A1.u, B1.u)
       )
-   ;  domain_error(A1, B1)
+   ;  domain_error(A1.q, B1.q)
    ).
+
+normalize_unit(Unit, R), unit(Unit, _) =>
+   R = Unit.
+normalize_unit(Symbol, R), unit(Unit, Symbol) =>
+   R = Unit.
+normalize_unit(Unit, R), unit(Module:Unit, _) =>
+   R = Module:Unit.
+normalize_unit(Module:Symbol, R), unit(Module:Unit, Symbol) =>
+   R = Module:Unit.
+normalize_unit(Module:PrefixUnit, R),
+      PrefixUnit =.. [Prefix, Unit],
+      prefix(Module:Prefix, _, _) =>
+   normalize_unit(Unit, R1),
+   R2 =.. [Prefix, R1],
+   R = Module:R2.
+normalize_unit(PrefixUnit, R),
+      PrefixUnit =.. [Prefix, Unit],
+      prefix(Module:Prefix, _, _) =>
+   normalize_unit(Unit, R1),
+   R2 =.. [Prefix, R1],
+   R = Module:R2.
+normalize_unit(_, _) => fail.
 
 normalize_kind(kind_of(A)/kind_of(B), R) =>
    normalize(A/B, AB),
@@ -604,19 +670,19 @@ eval_(in(Expr, Unit), R) =>
       R = q{v: V, q: M.q, u: Q.u}
    ;  domain_error(M.q, Q.q)
    ).
-eval_(as(Expr, Quantity), R), alias_or_quantity(Quantity) =>
+eval_(as(Expr, Quantity), R), alias_quantity(Quantity) =>
    eval_(Expr, M),
    (  implicitly_convertible(M.q, Quantity)
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
-eval_(force_as(Expr, Quantity), R), alias_or_quantity(Quantity) =>
+eval_(force_as(Expr, Quantity), R), alias_quantity(Quantity) =>
    eval_(Expr, M),
    (  explicitly_convertible(M.q, Quantity)
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
-eval_(cast(Expr, Quantity), R), alias_or_quantity(Quantity) =>
+eval_(cast(Expr, Quantity), R), alias_quantity(Quantity) =>
    eval_(Expr, M),
    (  common_quantity(M.q, Quantity, _)
    -> R = M.put(q, Quantity)
@@ -644,7 +710,7 @@ eval_(QuantityExpr[UnitExpr], R) =>
    R.u = Unit.u.
 eval_(N, R), number(N) =>
    R = q{v: N, q: 1, u: 1}.
-eval_(Quantity, R), alias_or_quantity(Quantity) =>
+eval_(Quantity, R), alias_quantity(Quantity) =>
    R = q{v: _, q: Quantity, u: _}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.

@@ -1,6 +1,5 @@
 :- module(isq, []).
 
-:- use_module("../../units.pl").
 :- use_module(isq/base_quantities).
 :- use_module(isq/electromagnetism).
 :- use_module(isq/information_science_and_technology).

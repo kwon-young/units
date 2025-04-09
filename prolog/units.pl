@@ -42,7 +42,8 @@
 :- multifile unit_symbol/2.
 :- multifile unit_symbol_formula/3.
 
-units:dimension_symbol(1, '').
+units:dimension_symbol(dim_1, '').
+units:quantity_parent(1, dim_1).
 
 :- use_module(units/q).
 :- use_module(units/systems/angular).
@@ -100,6 +101,10 @@ parse((A/B)**N) ==>
 parse((A**N1)**N2) ==>
    { N is N1 * N2 },
    parse(A**N).
+parse(dim_1) ==>
+   [].
+parse(dim_1**_) ==>
+   [].
 parse(A**N) ==>
    [A-N].
 parse(A) ==>
@@ -282,7 +287,9 @@ alias_quantity(Quantity) :-
 
 alias_parent(Alias, Parent) :-
    alias(Alias, Quantity),
-   alias_quantity_parent(Quantity, Parent).
+   (  alias_quantity_parent(Quantity, Parent)
+   ;  base_quantity(Quantity), Parent = Quantity
+   ).
 
 :- table alias_or_quantity_parent/2.
 
@@ -327,10 +334,13 @@ root(Quantity) :-
 
 :- table quantity_dimensions/2.
 
-quantity_dimensions(Quantity, Quantity) :-
-   base_quantity(Quantity).
+quantity_dimensions(Dimension, Dimension) :-
+   dimension_symbol(Dimension, _).
 quantity_dimensions(Quantity, Dimensions) :-
-   alias_quantity_parent(Quantity, Parent),
+   alias(Quantity, Parent),
+   quantity_dimensions(Parent, Dimensions).
+quantity_dimensions(Quantity, Dimensions) :-
+   quantity_parent(Quantity, Parent),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, Dimensions) :-
    derived_quantity(Quantity),
@@ -378,7 +388,7 @@ quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
    root_kind(Kind).
 quantity_kind(Quantity, Kind) :-
-   alias_quantity_parent(Quantity, Parent),
+   alias_or_quantity_parent(Quantity, Parent),
    quantity_kind(Parent, Kind).
 
 derived_quantity_kind(Quantity, Kind) :-

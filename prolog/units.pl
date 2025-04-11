@@ -830,7 +830,7 @@ test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, _Speed).
 
 test('in as') :-
-   qeval(_Speed is (m/s in inch/h) as isq:speed).
+   qeval(_Speed is (m/s in inch/hour) as isq:speed).
 
 as_data(_ is isq:width[m] as isq:length).
 as_data(_ is isq:width[m] / isq:time[s] as isq:speed).
@@ -847,7 +847,7 @@ test('error_in', [error(domain_error(_, _))]) :-
    qeval(_ is si:hertz in si:becquerel).
 
 test('acceleration') :-
-   qeval(Speed is 60 * isq:velocity[km/h]),
+   qeval(Speed is 60 * isq:velocity[km/hour]),
    qeval(Duration is 8 * s),
    qeval(A is (Speed / Duration) as isq:acceleration),
    qeval(B is A in m/s**2),

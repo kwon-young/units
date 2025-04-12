@@ -1,6 +1,7 @@
 :- module(units, [
    op(600, xfx, as),
    op(600, xfx, in),
+   op(500, fy, quantity),
    op(100, yf,  []),
    op(99, xfy, :),
    alias/2,
@@ -44,8 +45,11 @@
 
 units:dimension_symbol(dim_1, '').
 units:quantity_parent(1, dim_1).
+units:unit_kind(1, 1).
 
 :- use_module(units/q).
+:- use_module(units/systems/isq).
+:- use_module(units/systems/si).
 :- use_module(units/systems/angular).
 :- use_module(units/systems/cgs).
 :- use_module(units/systems/hep).
@@ -53,8 +57,6 @@ units:quantity_parent(1, dim_1).
 :- use_module(units/systems/iec).
 :- use_module(units/systems/imperial).
 :- use_module(units/systems/international).
-:- use_module(units/systems/isq).
-:- use_module(units/systems/si).
 :- use_module(units/systems/usc).
 
 user:portray(Q) :-
@@ -72,16 +74,16 @@ is_quantity(Term) :-
    -> true
    ;  Q = kind_of(K)
    -> derived_root_kind(K)
-   ;  mapexpr(alias_quantity, Q)
+   ;  alias_derived_quantity(Q)
    ),
    get_dict(u, Term, U),
    (  var(U)
    -> true
-   ;  mapexpr(normalize_unit, U, _)
+   ;  normalize_unit(U, _)
    ),
    get_dict(v, Term, _).
 error:has_type(q:Quantity, Term) :-
-   (  ground(Quantity), alias_quantity(Quantity)
+   (  alias_derived_quantity(Quantity)
    -> true
    ;  domain_error(quantity, Quantity)
    ),
@@ -280,10 +282,22 @@ alias_quantity_parent(Alias, Parent) :-
    alias(Alias, Quantity),
    alias_quantity_parent(Quantity, Parent).
 
-alias_quantity(Quantity) :-
+:- table alias_quantity_/1.
+
+alias_quantity_(Quantity) :-
    alias_base_quantity(Quantity).
-alias_quantity(Quantity) :-
+alias_quantity_(Quantity) :-
    alias_quantity_parent(Quantity, _).
+
+alias_quantity(Quantity), \+ ground(Quantity) =>
+   when(ground(Quantity), alias_quantity(Quantity)).
+alias_quantity(Quantity) =>
+   alias_quantity_(Quantity).
+
+alias_derived_quantity(Quantity), \+ ground(Quantity) =>
+   when(ground(Quantity), alias_derived_quantity(Quantity)).
+alias_derived_quantity(Quantity) =>
+   mapexpr(alias_quantity, Quantity).
 
 alias_parent(Alias, Parent) :-
    alias(Alias, Quantity),
@@ -377,10 +391,15 @@ root_kind(Kind) :-
 root_kind(Root) :-
    root(Root).
 
-:- table derived_root_kind/1.
+:- table derived_root_kind_/1.
 
-derived_root_kind(Kind) :-
+derived_root_kind_(Kind) :-
    mapexpr([X, X]>>root_kind(X), [X, _]>>domain_error(root_kind, X), Kind, Kind).
+
+derived_root_kind(Kind), \+ ground(Kind) =>
+   when(ground(Kind), derived_root_kind(Kind)).
+derived_root_kind(Kind) =>
+   derived_root_kind_(Kind).
 
 :- table quantity_kind/2.
 
@@ -394,6 +413,8 @@ quantity_kind(Quantity, Kind) :-
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
 
+common_quantity(Q1, Q2, Q), Q1=Q2 =>
+   Q2 = Q.
 common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
    simplify_dimensions(Q1, K1),
    simplify_dimensions(Q2, K2),
@@ -416,7 +437,8 @@ common_quantity(Q1, kind_of(Q2), Q) =>
 common_quantity(Q1, Q2, Q) =>
    common_expr(quantity, Q1, 1, Q2, 1, Q).
 
-same_kind(Q1, Q2) :-
+same_kind(Q1, Q2), Q1 = Q2 => true.
+same_kind(Q1, Q2) =>
    derived_quantity_kind(Q1, K1),
    derived_quantity_kind(Q2, K2),
    common_quantity(K1, K2, K),
@@ -461,14 +483,21 @@ implicitly_convertible(From, To, _) :-
    alias_quantity_formula(To, Formula),
    implicitly_convertible(From, Formula).
 
-implicitly_convertible(From, To) :-
+implicitly_convertible(From, To), unifiable(From, To, _) =>
+   From = To.
+implicitly_convertible(From, To) =>
    implicitly_convertible(From, To, false).
 
-:- table explicitly_convertible/2.
+explicitly_convertible(From, To), unifiable(From, To, _) =>
+   From = To.
+explicitly_convertible(From, To) =>
+   explicitly_convertible_(From, To).
 
-explicitly_convertible(From, To) :-
+:- table explicitly_convertible_/2.
+
+explicitly_convertible_(From, To) :-
    implicitly_convertible(From, To, true).
-explicitly_convertible(From, To) :-
+explicitly_convertible_(From, To) :-
    implicitly_convertible(To, From, true).
 
 :- table alias_or_unit_symbol/2.
@@ -535,18 +564,22 @@ unit(U, S) :-
    ;  unit(U, S, _)
    ).
 
-:- table all_unit_kind/2.
-
-all_unit_kind(Unit, kind_of(Kind)) :-
-   unit_kind(Unit, Kind),
-   !.
-all_unit_kind(Unit, R) :-
-   unit(Unit, _, Formula),
-   mapexpr(all_unit_kind, [_, 1]>>true, Formula, Kind),
+all_unit_kind(Unit, R), unit_kind(Unit, Kind) =>
+   R = kind_of(Kind).
+all_unit_kind(Unit, R), unit(Unit, _, Formula) =>
+   all_unit_kind(Formula, R).
+all_unit_kind(Unit, R), derived_quantity(Unit) =>
+   mapexpr(all_unit_kind, [_, 1]>>true, Unit, Kind),
    normalize(Kind, NKind),
    normalize_kind(NKind, R).
+all_unit_kind(_, _) => fail.
 
-common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Unit2, _) =>
+   Unit1 = Unit2,
+   NewFactor1 = 1,
+   NewFactor2 = 1,
+   NewUnit = Unit2.
+common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) =>
    common_expr(unit, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 comparable(AB, R) :-
@@ -554,14 +587,24 @@ comparable(AB, R) :-
    eval_(A, A1),
    eval_(B, B1),
    (  same_kind(A1.q, B1.q), common_quantity(A1.q, B1.q, Q)
-   -> (  common_unit(A1.v*A1.u, AV, B1.v*B1.u, BV, U)
-      -> V =.. [Op, AV, BV],
+   -> (  common_unit(A1.u, AV, B1.u, BV, U)
+      -> (  Op == is
+         -> A1.v = A2,
+            normalize(B1.v*BV/AV, B2)
+         ;  normalize(A1.v*AV, A2),
+            normalize(B1.v*BV, B2)
+         ),
+         V =.. [Op, A2, B2],
          R = q{v: V, u: U, q: Q}
       ;  domain_error(A1.u, B1.u)
       )
    ;  domain_error(A1.q, B1.q)
    ).
 
+normalize_unit(Unit, R), var(Unit), ground(R) =>
+   Unit = R.
+normalize_unit(Unit, R), var(Unit), var(R) =>
+   when((ground(Unit) ; ground(R)), normalize_unit(Unit, R)).
 normalize_unit(Unit, R), unit(Unit, _) =>
    R = Unit.
 normalize_unit(Symbol, R), unit(Unit, Symbol) =>
@@ -582,8 +625,19 @@ normalize_unit(PrefixUnit, R),
    normalize_unit(Unit, R1),
    R2 =.. [Prefix, R1],
    R = Module:R2.
+normalize_unit(U, R), derived_quantity(U) =>
+   mapexpr(normalize_unit, U, R).
 normalize_unit(_, _) => fail.
 
+normalize_kind(kind_of(A)**N1/kind_of(B)**N2, R) =>
+   normalize(A**N1/B**N2, AB),
+   R = kind_of(AB).
+normalize_kind(kind_of(A)/kind_of(B)**N, R) =>
+   normalize(A/B**N, AB),
+   R = kind_of(AB).
+normalize_kind(kind_of(A)**N/kind_of(B), R) =>
+   normalize(A**N/B, AB),
+   R = kind_of(AB).
 normalize_kind(kind_of(A)/kind_of(B), R) =>
    normalize(A/B, AB),
    R = kind_of(AB).
@@ -623,9 +677,7 @@ eval_({ExprIn}, R) =>
    eval_(ExprIn, ExprOut),
    R = ExprOut.put(v, {ExprOut.v}).
 eval_(Result is ExprIn, R) =>
-   eval_(ExprIn, ExprOut),
-   R = ExprOut.put(v, V is ExprOut.v),
-   Result = ExprOut.put(v, V).
+   comparable(quantity Result is ExprIn, R).
 eval_(+A, R) =>
    eval_(A, A1),
    R = A1.put(v, +A1.v).
@@ -676,23 +728,26 @@ eval_(in(Expr, Unit), R) =>
    (  implicitly_convertible(M.q, Q.q)
    -> common_unit(M.u, F1, Q.u, F2, _),
       normalize(M.v*F1/F2, V1),
-      V is V1,
+      (  ground(V1)
+      -> V is V1
+      ;  {V == V1}
+      ),
       R = q{v: V, q: M.q, u: Q.u}
    ;  domain_error(M.q, Q.q)
    ).
-eval_(as(Expr, Quantity), R), alias_quantity(Quantity) =>
+eval_(as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
    eval_(Expr, M),
    (  implicitly_convertible(M.q, Quantity)
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
-eval_(force_as(Expr, Quantity), R), alias_quantity(Quantity) =>
+eval_(force_as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
    eval_(Expr, M),
    (  explicitly_convertible(M.q, Quantity)
    -> R = M.put(q, Quantity)
    ;  domain_error(M.q, Quantity)
    ).
-eval_(cast(Expr, Quantity), R), alias_quantity(Quantity) =>
+eval_(cast(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
    eval_(Expr, M),
    (  common_quantity(M.q, Quantity, _)
    -> R = M.put(q, Quantity)
@@ -704,11 +759,16 @@ eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
 eval_(random_float, R) =>
    R = q{v: random_float, q: 1, u: 1}.
-eval_(X, R), var(X) =>
-   R = q{v: X, q: 1, u: 1}.
-eval_(UnitOrSymbol, R), normalize_unit(UnitOrSymbol, Unit) =>
-   all_unit_kind(Unit, Kind),
-   R = q{v: 1, q: Kind, u: Unit}.
+eval_(q:X, R), alias_derived_quantity(X) =>
+   R = q{v: _, q: X, u: _}.
+eval_(u:X, R) =>
+   normalize_unit(X, U),
+   when(ground(U), all_unit_kind(U, kind_of(UKind))),
+   when((ground(UKind), ground(Q)), implicitly_convertible(kind_of(UKind), Q)),
+   R = q{v: 1, q: Q, u: U}.
+eval_(quantity(Quantity), R) =>
+   eval_(_*q:_[u:_], Quantity),
+   R = Quantity.
 eval_(QuantityExpr[UnitExpr], R) =>
    eval_(QuantityExpr, R),
    eval_(UnitExpr, Unit),
@@ -718,12 +778,17 @@ eval_(QuantityExpr[UnitExpr], R) =>
    ),
    R.v = Unit.v,
    R.u = Unit.u.
-eval_(N, R), number(N) =>
-   R = q{v: N, q: 1, u: 1}.
-eval_(Quantity, R), alias_quantity(Quantity) =>
-   R = q{v: _, q: Quantity, u: _}.
+eval_(X, R), var(X) =>
+   R = q{v: X, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>
    R = Q.
+eval_(N, R), number(N) =>
+   R = q{v: N, q: 1, u: 1}.
+eval_(UnitOrSymbol, R), ground(UnitOrSymbol), normalize_unit(UnitOrSymbol, Unit) =>
+   all_unit_kind(Unit, Kind),
+   R = q{v: 1, q: Kind, u: Unit}.
+eval_(Quantity, R), ground(Quantity), alias_quantity(Quantity) =>
+   R = q{v: _, q: Quantity, u: _}.
 
 :- begin_tests(units).
 

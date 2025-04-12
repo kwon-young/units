@@ -672,7 +672,14 @@ qeval((A, B)) =>
    qeval(B).
 qeval(Expr) =>
    eval_(Expr, Q),
-   call(Q.v).
+   V = Q.v,
+   (  \+ V = {_},
+      (  V = (_ is Expr), \+ ground(Expr)
+      ;  \+ ground(V)
+      )
+   -> call({Q.v})
+   ;  call(Q.v)
+   ).
 eval_({ExprIn}, R) =>
    eval_(ExprIn, ExprOut),
    R = ExprOut.put(v, {ExprOut.v}).

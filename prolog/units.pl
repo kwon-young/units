@@ -674,7 +674,8 @@ qeval(Expr) =>
    eval_(Expr, Q),
    V = Q.v,
    (  \+ V = {_},
-      (  V = (_ is Expr), \+ ground(Expr)
+      (  V = (_ is E)
+      -> \+ ground(E)
       ;  \+ ground(V)
       )
    -> call({Q.v})
@@ -931,7 +932,9 @@ test('clpBNR') :-
    qeval({B =:= 5000 * gram / (2*gram)}),
    B == 2500,
    qeval({C is 1^2}),
-   C == q{q:1, u:1, v:1}.
+   C == q{q:1, u:1, v:1},
+   qeval(D is 0.1),
+   must_be(number, D.v).
 
 test('quantity_kind') :-
    quantity_kind(isq:duration, isq:time).

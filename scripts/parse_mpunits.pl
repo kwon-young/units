@@ -92,7 +92,12 @@ parse_term(Alias=Quantity) ==>
    {  add_namespace(Ns, Alias, NsAlias),
       normalize_expr(Ns, Quantity, NsQuantity)
    },
-   add_fact(alias(NsAlias, NsQuantity)).
+   add_fact(alias(NsAlias, NsQuantity)),
+   origin(Origins),
+   (  {ord_memberchk(NsQuantity, Origins)}
+   -> add_origin(NsAlias)
+   ;  []
+   ).
 parse_term(Unit:named_unit(Symbol, Opt1)) ==>
    parse_term(Unit:named_unit(Symbol, Opt1), _).
 parse_term(Unit:named_unit(Symbol, Opt1, Opt2)) ==>
@@ -110,7 +115,7 @@ parse_term(Point:relative_point_origin(mp_units::point(Unit)**N)) ==>
    {  add_namespace(Ns, Point, NsPoint),
       normalize_expr(Ns, Unit, NsUnit)
    },
-   add_fact(relative_point_origin(NsPoint, N*NsUnit)),
+   add_fact(relative_point_origin(NsPoint, point(N*NsUnit))),
    add_origin(NsPoint).
 parse_term({}) ==>
    [].

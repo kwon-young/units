@@ -20,7 +20,7 @@ units:alias(si:minute,non_si:minute).
 units:no_space_before_unit_symbol(non_si:degree).
 units:no_space_before_unit_symbol(non_si:arcminute).
 units:no_space_before_unit_symbol(non_si:arcsecond).
-units:relative_point_origin(si:ice_point,273150*(si:milli(si:kelvin))).
+units:relative_point_origin(si:ice_point,point(273150*(si:milli(si:kelvin)))).
 units:unit_kind(si:second,isq:time).
 units:unit_kind(si:metre,isq:length).
 units:unit_kind(si:gram,isq:mass).
@@ -34,6 +34,8 @@ units:unit_kind(si:hertz,isq:frequency).
 units:unit_kind(si:becquerel,isq:activity).
 units:unit_kind(si:gray,isq:absorbed_dose).
 units:unit_kind(si:sievert,isq:dose_equivalent).
+units:unit_origin(si:kelvin,si:zeroth_kelvin).
+units:unit_origin(si:degree_Celsius,si:zeroth_degree_Celsius).
 units:unit_symbol(si:second,s).
 units:unit_symbol(si:metre,m).
 units:unit_symbol(si:gram,g).

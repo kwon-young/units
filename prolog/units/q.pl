@@ -3,13 +3,13 @@
 :- use_module("../units.pl").
 
 M.in(Unit) := R :-
-   units:eval_(M in Unit, R).
+   qeval(R is M in Unit).
 
 M.as(Quantity) := R :-
-   units:eval_(M as Quantity, R).
+   qeval(R is M as Quantity).
 
 M.cast(Quantity) := R :-
-   units:eval_(cast(M, Quantity), R).
+   qeval(R is cast(M, Quantity)).
 
 M.this(This) := This :-
    This =  q{q: _, u: _, v: _},

@@ -21,7 +21,8 @@ units:alias(usc:ounce,international:ounce).
 units:alias(usc:pound,international:pound).
 units:alias(usc:short_ton,usc:ton).
 units:alias(usc:zeroth_rankine,si:zeroth_kelvin).
-units:relative_point_origin(usc:zeroth_degree_Fahrenheit,459670*(si:milli(usc:rankine))).
+units:relative_point_origin(usc:zeroth_degree_Fahrenheit,point(459670*(si:milli(usc:rankine)))).
+units:unit_origin(usc:rankine,usc:zeroth_rankine).
 units:unit_origin(usc:degree_Fahrenheit,usc:zeroth_degree_Fahrenheit).
 units:unit_symbol_formula(usc:fathom,'ftm(us)',2*(usc:yard)).
 units:unit_symbol_formula(usc:cable,'cb(us)',120*(usc:fathom)).

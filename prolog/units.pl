@@ -941,6 +941,9 @@ eval_(point(Expr), R) =>
    eval_(Expr, Q),
    unit_origin_0(Q.u, Origin),
    R = Origin.put([q=Q]).
+eval_(exp(Expr), R) =>
+   eval_(Expr in 1, R1),
+   R = R1.put([v=exp(R1.v)]).
 eval_(X, R), var(X) =>
    R = q{v: X, q: 1, u: 1}.
 eval_(Q, R), is_dict(Q, q) =>

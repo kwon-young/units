@@ -766,43 +766,47 @@ normalize_unit(U, R), derived_quantity(U) =>
    mapexpr(normalize_unit, U, R).
 normalize_unit(_, _) => fail.
 
-normalize_kind(kind_of(A)**N1/kind_of(B)**N2, R) =>
+normalize_kind_(kind_of(A)**N1/kind_of(B)**N2, R) =>
    normalize(A**N1/B**N2, AB),
    R = kind_of(AB).
-normalize_kind(kind_of(A)/kind_of(B)**N, R) =>
+normalize_kind_(kind_of(A)/kind_of(B)**N, R) =>
    normalize(A/B**N, AB),
    R = kind_of(AB).
-normalize_kind(kind_of(A)**N/kind_of(B), R) =>
+normalize_kind_(kind_of(A)**N/kind_of(B), R) =>
    normalize(A**N/B, AB),
    R = kind_of(AB).
-normalize_kind(kind_of(A)/kind_of(B), R) =>
+normalize_kind_(kind_of(A)/kind_of(B), R) =>
    normalize(A/B, AB),
    R = kind_of(AB).
-normalize_kind(kind_of(A)*kind_of(B), R) =>
+normalize_kind_(kind_of(A)*kind_of(B), R) =>
    normalize(A*B, AB),
    R = kind_of(AB).
-normalize_kind(kind_of(A)**N, R) =>
+normalize_kind_(kind_of(A)**N, R) =>
    normalize(A**N, AN),
    R = kind_of(AN).
 normalize_kind(kind_of(A)/1, R) =>
    R = kind_of(A).
-normalize_kind(1/kind_of(A), R) =>
+normalize_kind_(1/kind_of(A), R) =>
    normalize(1/A, AN),
    R = kind_of(AN).
-normalize_kind(kind_of(A)*1, R) =>
+normalize_kind_(kind_of(A)*1, R) =>
    R = kind_of(A).
-normalize_kind(1*kind_of(A), R) =>
+normalize_kind_(1*kind_of(A), R) =>
    R = kind_of(A).
-normalize_kind(kind_of(A)/B, R) =>
+normalize_kind_(kind_of(A)/B, R) =>
    normalize(A/B, R).
-normalize_kind(A/kind_of(B), R) =>
+normalize_kind_(A/kind_of(B), R) =>
    normalize(A/B, R).
-normalize_kind(kind_of(A)*B, R) =>
+normalize_kind_(kind_of(A)*B, R) =>
    normalize(A*B, R).
-normalize_kind(A*kind_of(B), R) =>
+normalize_kind_(A*kind_of(B), R) =>
    normalize(A*B, R).
-normalize_kind(A, R) =>
-   normalize(A, R).
+normalize_kind_(_, _) => fail.
+
+normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
+   normalize_kind(E1, R).
+normalize_kind(E, R) =>
+   normalize(E, R).
 
 qeval((A, B)) =>
    qeval(A),

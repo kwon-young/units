@@ -159,6 +159,13 @@ normalize(In, Out) :-
    normalize_factors(L, L1),
    generate_expression(L1, Out).
 
+normalize_dimension(In, Out) :-
+   normalize(In, N),
+   (  N == 1
+   -> Out = dim_1
+   ;  Out = N
+   ).
+
 is_num(_-N) => N > 0.
 
 power(A-1, Res) => Res = A.
@@ -364,15 +371,22 @@ root(Quantity) :-
 
 quantity_dimensions(Dimension, Dimension) :-
    dimension_symbol(Dimension, _).
+quantity_dimensions(kind_of(Quantity), Dimension) :-
+   quantity_dimensions(Quantity, Dimension).
 quantity_dimensions(Quantity, Dimensions) :-
    alias(Quantity, Parent),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, Dimensions) :-
    quantity_parent(Quantity, Parent),
    quantity_dimensions(Parent, Dimensions).
-quantity_dimensions(Quantity, Dimensions) :-
+quantity_dimensions(Quantity, NormalizedDimensions) :-
    derived_quantity(Quantity),
-   mapexpr(quantity_dimensions, Quantity, Dimensions).
+   mapexpr(quantity_dimensions, Quantity, Dimensions),
+   normalize_dimension(Dimensions, NormalizedDimensions).
+
+same_dimension(Q1, Q2) :-
+   quantity_dimensions(Q1, D),
+   quantity_dimensions(Q2, D).
 
 factors_dimensions(Factor, Dimensions) :-
    generate_expression([Factor], Quantity),
@@ -427,28 +441,31 @@ quantity_kind(Quantity, Kind) :-
 derived_quantity_kind(Quantity, Kind) :-
    mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
 
-common_quantity(Q1, Q2, Q), Q1=Q2 =>
+common_quantity(Q1, Q2, Q) :-
+   same_dimension(Q1, Q2),
+   common_quantity_(Q1, Q2, Q).
+common_quantity_(Q1, Q2, Q), Q1=Q2 =>
    Q2 = Q.
-common_quantity(kind_of(Q1), kind_of(Q2), Q) =>
+common_quantity_(kind_of(Q1), kind_of(Q2), Q) =>
    simplify_dimensions(Q1, K1),
    simplify_dimensions(Q2, K2),
-   common_quantity(K1, K2, Q3),
+   common_quantity_(K1, K2, Q3),
    (  K1 == Q3
    -> Q = kind_of(Q2)
    ;  K2 == Q3
    -> Q = kind_of(Q1)
    ;  Q = Q3
    ).
-common_quantity(kind_of(Q1), Q2, Q) =>
+common_quantity_(kind_of(Q1), Q2, Q) =>
    simplify_dimensions(Q1, K1),
-   common_quantity(K1, Q2, Q3),
+   common_quantity_(K1, Q2, Q3),
    (  K1 == Q3
    -> Q = Q2
    ;  Q = Q3
    ).
-common_quantity(Q1, kind_of(Q2), Q) =>
-   common_quantity(kind_of(Q2), Q1, Q).
-common_quantity(Q1, Q2, Q) =>
+common_quantity_(Q1, kind_of(Q2), Q) =>
+   common_quantity_(kind_of(Q2), Q1, Q).
+common_quantity_(Q1, Q2, Q) =>
    common_expr(quantity, Q1, 1, Q2, 1, Q).
 
 same_kind(Q1, Q2), Q1 = Q2 => true.
@@ -1018,6 +1035,12 @@ common_quantity_data(isq:width, kind_of(isq:length), isq:width).
 
 test('common_quantity', [forall(common_quantity_data(Q1, Q2, Q))]) :-
    common_quantity(Q1, Q2, Q).
+
+test('not_common_quantity', [fail]) :-
+   call_with_time_limit(
+      1,
+      common_quantity(isq:voltage * isq:time/(isq:capacitance * isq:resistance), isq:time, _)
+   ).
 
 test('explicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    explicitly_convertible(Q1, Q2).

@@ -74,7 +74,7 @@ user:portray(Q) :-
    format("~p * ~p[~p]", [V, Quantity, U]).
 
 qformat(M) :-
-   mapexpr(alias_or_unit_symbol, M.u, Symbol),
+   mapexpr(unit, M.u, Symbol),
    (  alias_no_space_before_unit_symbol(Symbol)
    -> Space = ""
    ;  Space = " "

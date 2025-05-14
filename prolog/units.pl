@@ -32,6 +32,9 @@
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
 :- use_module(library(error)).
+:- use_module(library(yall)).
+:- use_module(library(apply)).
+:- use_module(library(apply_macros)).
 
 :- multifile alias/2.
 :- multifile dimension_symbol/2.
@@ -109,7 +112,7 @@ parse(A*B) ==>
 parse(A/B) ==>
    parse(A),
    { phrase(parse(B), L) },
-   sequence(inverse, L).
+   inverse(L).
 parse((A*B)**N) ==>
    parse(A**N*B**N).
 parse((A/B)**N) ==>
@@ -126,9 +129,11 @@ parse(A**N) ==>
 parse(A) ==>
    [A-1].
 
-inverse(A-N) -->
+inverse([]) --> [].
+inverse([A-N | L]) -->
    { N1 is -N },
-   [A-N1].
+   [A-N1],
+   inverse(L).
 
 aggregate(L, L2) :-
    group_pairs_by_key(L, Groups),
@@ -168,13 +173,13 @@ normalize_dimension(In, Out) :-
 
 is_num(_-N) => N > 0.
 
-power(A-1, Res) => Res = A.
-power(A-N, Res) => Res = A**N.
+power(A-1, A) :- !.
+power(A-N, A**N).
 
 generate_expression(In, Out) :-
    partition(is_num, In, Num, Denom),
    maplist(power, Num, Num1),
-   phrase(sequence(inverse, Denom), Denom1),
+   phrase(inverse(Denom), Denom1),
    maplist(power, Denom1, Denom2),
    num_denom(Num1, Denom2, Out).
 
@@ -229,6 +234,8 @@ mapexpr(Goal, Failure, A, A1) =>
    *-> true
    ;  call(Failure, A, A1)
    ).
+
+:- table common_expr/6.
 
 common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    parse_normalize_factors(Unit1, F1),
@@ -595,15 +602,20 @@ unit(U, S) :-
    ;  unit(U, S, _)
    ).
 
-all_unit_kind(Unit, R), unit_kind(Unit, Kind) =>
+:- table all_unit_kind/2.
+
+all_unit_kind(Unit, Kind) :-
+   all_unit_kind_(Unit, Kind).
+
+all_unit_kind_(Unit, R), unit_kind(Unit, Kind) =>
    R = kind_of(Kind).
-all_unit_kind(Unit, R), unit(Unit, _, Formula) =>
-   all_unit_kind(Formula, R).
-all_unit_kind(Unit, R), derived_quantity(Unit) =>
-   mapexpr(all_unit_kind, [_, 1]>>true, Unit, Kind),
+all_unit_kind_(Unit, R), unit(Unit, _, Formula) =>
+   all_unit_kind_(Formula, R).
+all_unit_kind_(Unit, R), derived_quantity(Unit) =>
+   mapexpr(all_unit_kind_, [_, 1]>>true, Unit, Kind),
    normalize(Kind, NKind),
    normalize_kind(NKind, R).
-all_unit_kind(_, _) => fail.
+all_unit_kind_(_, _) => fail.
 
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Unit2, _) =>
    Unit1 = Unit2,
@@ -784,7 +796,7 @@ normalize_kind_(kind_of(A)*kind_of(B), R) =>
 normalize_kind_(kind_of(A)**N, R) =>
    normalize(A**N, AN),
    R = kind_of(AN).
-normalize_kind(kind_of(A)/1, R) =>
+normalize_kind_(kind_of(A)/1, R) =>
    R = kind_of(A).
 normalize_kind_(1/kind_of(A), R) =>
    normalize(1/A, AN),

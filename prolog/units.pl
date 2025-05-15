@@ -140,11 +140,14 @@ aggregate(L, L2) :-
    maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L1),
    simplify(L1, L2).
 
-identity(_-0, _) => fail.
-identity(1-_, _) => fail.
-identity(A, R) => R = A.
-simplify(L, L1) :-
-   convlist(identity, L, L1).
+simplify([], R) => R = [].
+simplify([_-0 | T], R) =>
+   simplify(T, R).
+simplify([1-_ | T], R) =>
+   simplify(T, R).
+simplify([H | T], R) =>
+   R = [H | L],
+   simplify(T, L).
 
 num_denom([], Denom, Expr) :-
    denom(Denom, 1, Expr).
@@ -171,7 +174,7 @@ normalize_dimension(In, Out) :-
    ;  Out = N
    ).
 
-is_num(_-N) => N > 0.
+is_num(_-N) :- N > 0.
 
 power(A-1, A) :- !.
 power(A-N, A**N).

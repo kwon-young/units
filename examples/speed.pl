@@ -1,7 +1,7 @@
 :- use_module(library(units)).
 
 avg_speed(Distance, Time, Speed) :-
-   qeval({Speed is Distance / Time as isq:speed}).
+   qeval(Speed is Distance / Time as isq:speed).
 
 main :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, Speed),

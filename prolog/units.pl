@@ -68,7 +68,10 @@ units:unit_kind(1, 1).
 :- use_module(units/systems/international).
 :- use_module(units/systems/usc).
 
+:- create_prolog_flag(units_portray, false, [type(boolean), keep(true)]).
+
 user:portray(Q) :-
+   current_prolog_flag(units_portray, true),
    is_dict(Q, q),
    get_dict(v, Q, V),
    get_dict(q, Q, Quantity),

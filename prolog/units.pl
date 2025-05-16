@@ -1,7 +1,14 @@
 :- module(units, [
-   op(600, xfx, as),
-   op(600, xfx, in),
-   op(500, fy, quantity),
+   op(600, yfx, as),
+   op(600, yfx, in),
+   op(300, fy, quantity),
+   op(300, fy, unit),
+   op(300, fy, quantity_point),
+   op(300, fy, origin),
+   op(300, fy, point),
+   op(300, fy, quantity_from_zero),
+   op(300, yfx, quantity_from),
+   op(300, yfx, point_for),
    op(100, yf,  []),
    op(99, xfy, :),
 
@@ -93,13 +100,18 @@ is_quantity(Term, R) :-
    ;  normalize_unit(U, _)
    ),
    get_dict(v, R, _).
-error:has_type(q:Quantity, Term) :-
+error:has_type(quantity(Quantity), Term) :-
    (  alias_derived_quantity(Quantity)
    -> true
    ;  domain_error(quantity, Quantity)
    ),
    is_quantity(Term, R),
    implicitly_convertible(R.q, Quantity).
+error:has_type(Quantity, Term) :-
+   ground(Quantity),
+   alias_derived_quantity(Quantity),
+   !,
+   error:has_type(quantity(Quantity), Term).
 
 parse(A*B) ==>
    parse(A), parse(B).
@@ -670,7 +682,7 @@ common_origin(O1, F1, O2, F2, O) :-
 
 common_origin(O, F, O, F, O, _-N) :-
    setarg(1, N, no),
-   eval_(0*q:_[u:_], F).
+   eval_(0*_[_], F).
 common_origin(O1, F1, O2, F2, O, N) :-
    relative_point_origin(O1, Expr),
    eval_(Expr, R),
@@ -754,7 +766,7 @@ comparable_is(A, qp:B, R) =>
    R = B.put([q=RQ]),
    O = B.o,
    (  (var(O) ; O = 0)
-   -> Origin = o:O
+   -> Origin = origin(O)
    ;  Origin = O
    ),
    A = Origin+AQ.
@@ -942,7 +954,7 @@ eval_(pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
 eval_(random_float, R) =>
    R = q{v: random_float, q: 1, u: 1}.
-eval_(u:X, R) =>
+eval_(unit(X), R) =>
    normalize_unit(X, U),
    when(ground(U), all_unit_kind(U, kind_of(UKind))),
    when((ground(UKind), ground(Q)), implicitly_convertible(kind_of(UKind), Q)),
@@ -953,7 +965,7 @@ eval_(quantity(Quantity), R) =>
 eval_(QuantityExpr[UnitExpr], R) =>
    eval_q(QuantityExpr, Q),
    (  var(UnitExpr)
-   -> eval_(u:UnitExpr, Unit)
+   -> eval_(unit(UnitExpr), Unit)
    ;  eval_(UnitExpr, Unit)
    ),
    (  implicitly_convertible(Unit.q, Q)
@@ -965,19 +977,30 @@ eval_(point(Expr), R) =>
    eval_(Expr, Q),
    unit_origin_0(Q.u, Origin),
    R = Origin.put([q=Q]).
-eval_(o:Origin, R), alias_origin(Origin) =>
+eval_(quantity_point(QP), R) =>
+   QP = O + Q,
+   (  var(O)
+   -> Origin = origin(O)
+   ;  Origin = O
+   ),
+   (  var(Q)
+   -> Quantity = quantity(Q)
+   ;  Quantity = Q
+   ),
+   eval_(Origin + Quantity, R).
+eval_(origin(Origin), R), alias_origin(Origin) =>
    normalize_origin(Origin, R).
 eval_(exp(Expr), R) =>
    eval_(Expr in 1, R1),
    R = R1.put([v=exp(R1.v)]).
 eval_(quantity_from_zero(Expr), R) =>
-   eval_(Expr - o:0, R).
+   eval_(Expr - origin(0), R).
 eval_(quantity_from(Expr, Origin), R) =>
    eval_(Expr, R1),
    eval_(R1 - Origin in R1.q.u, R).
 eval_(point_for(Expr, Origin), R) =>
    (  (var(Origin) ; Origin = 0)
-   -> O = o:Origin
+   -> O = origin(Origin)
    ;  O = Origin
    ),
    eval_(O + quantity_from(Expr, Origin), R).
@@ -995,7 +1018,7 @@ eval_(Point, R), is_dict(Point, qp) =>
 eval_(Origin, R), alias_origin(Origin) =>
    normalize_origin(Origin, R).
 
-eval_q(q:Q, R), alias_derived_quantity(Q) =>
+eval_q(quantity(Q), R), alias_derived_quantity(Q) =>
    R = Q.
 eval_q(X, R), alias_derived_quantity(X) =>
    R = X.
@@ -1134,7 +1157,7 @@ test('acceleration') :-
    qeval(Duration is 8 * s),
    qeval(A is (Speed / Duration) as isq:acceleration),
    qeval(B is A in m/s**2),
-   must_be(q:isq:acceleration, B).
+   must_be(isq:acceleration, B).
 
 test('clpBNR') :-
    qeval({A * inch =:= 1 * metre}),
@@ -1143,7 +1166,7 @@ test('clpBNR') :-
    B == 2500,
    qeval({C is 1^2}),
    C == 1*1[1],
-   qeval(D*u:_ is 0.1),
+   qeval(D*unit(_) is 0.1),
    must_be(number, D).
 
 test('quantity_kind') :-
@@ -1227,18 +1250,18 @@ test('relative_point_origin') :-
    qeval(od - oa =:= 30*m),
    qeval(od - oc =:= 10*m),
    qeval(ob - ob =:= 0*m),
-   QP2B = o:QP2BO + quantity(_),
+   QP2B = origin(QP2BO) + quantity(_),
    qeval(QP2B is point_for(QP2, ob)),
    qeval(quantity_from(QP2B, QP2BO) =:= 140*m),
+   QP2A = quantity_point(QP2AO + _),
    qeval(QP2A is point_for(QP2, oa)),
-   QP2A = QP2AO + _,
    qeval(quantity_from(QP2A, QP2AO) =:= 150*m),
    qeval(QP2 =:= QP2B),
    qeval(QP2 =:= QP2A),
    true.
 
 test('variable_origin') :-
-   qeval(_ is o:_ + quantity(_)).
+   qeval(_ is origin(_) + quantity(_)).
 
 test('temperature') :-
    qeval(_ is si:zeroth_degree_Celsius + 20.5 * degree_Celsius),

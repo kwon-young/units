@@ -268,17 +268,31 @@ iterative_deepening(Limit, Goal) :-
    ).
 
 is_of(unit, U-_) :-
-   ground(U),
    unit(U, _).
 is_of(quantity, Q-_) :-
-   ground(Q),
    alias_quantity(Q).
 
+:- meta_predicate partition_soft(1,+,-,-).
+
+partition_soft(Pred, List, Included, Excluded) :-
+    partition_soft_(List, Pred, Included, Excluded).
+
+partition_soft_([], _, [], []).
+partition_soft_([H|T], Pred, Incl, Excl) :-
+    (   call(Pred, H)
+    *->  Incl=[H|I],
+        partition_soft_(T, Pred, I, Excl)
+    ;   Excl=[H|E],
+        partition_soft_(T, Pred, Incl, E)
+    ).
+
 common_factors(L1, R1, Type, L, N, L2, R2) :-
-   partition(is_of(Type), L1, Unit1, Factor1),
-   partition(is_of(Type), L2, Unit2, Factor2),
-   ord_intersection(Unit1, Unit2, CommonUnits, Unit2Only),
-   ord_subtract(Unit1, Unit2, Unit1Only),
+   partition_soft(is_of(Type), L1, Unit1, Factor1),
+   normalize_factors(Unit1, NUnit1),
+   partition_soft(is_of(Type), L2, Unit2, Factor2),
+   normalize_factors(Unit2, NUnit2),
+   ord_intersection(NUnit1, NUnit2, CommonUnits, Unit2Only),
+   ord_subtract(NUnit1, NUnit2, Unit1Only),
    append(CommonUnits, R, L),
    append(Factor1, R11, R1),
    append(Factor2, R22, R2),
@@ -297,7 +311,6 @@ expand_either_factors(L1, R1, Type, L, Limit-N, L2, R2) :-
 select_factor(L1, R1, Type, L, N) -->
    select(A),
    expand_factors(Type, A),
-   normalize_factors,
    common_factors(L1, R1, Type, L, N).
 
 expand_factors(Type, A), Factors -->
@@ -1134,6 +1147,8 @@ avg_speed(Distance, Time, Speed) :-
 
 test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, _Speed).
+test('avg_speed2') :-
+   avg_speed(isq:height[inch], quantity _Time, isq:speed[m/hour]).
 
 test('in as') :-
    qeval(_Speed is (m/s in inch/hour) as isq:speed).

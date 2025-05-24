@@ -113,27 +113,20 @@ error:has_type(Quantity, Term) :-
    !,
    error:has_type(quantity(Quantity), Term).
 
-parse(A*B) ==>
-   parse(A), parse(B).
-parse(A/B) ==>
-   parse(A),
-   { phrase(parse(B), L) },
-   inverse(L).
-parse((A*B)**N) ==>
-   parse(A**N*B**N).
-parse((A/B)**N) ==>
-   parse(A**N/B**N).
-parse((A**N1)**N2) ==>
-   { N is N1 * N2 },
-   parse(A**N).
-parse(dim_1) ==>
+parse(Expr, Factors) :-
+   phrase(parse(1, Expr), Factors).
+
+parse(Coeff, A*B) ==>
+   parse(Coeff, A), parse(Coeff, B).
+parse(Coeff, A/B) ==>
+   parse(Coeff, A),
+   parse(-Coeff, B).
+parse(Coeff, A**N) ==>
+   parse(Coeff*N, A).
+parse(_, dim_1) ==>
    [].
-parse(dim_1**_) ==>
-   [].
-parse(A**N) ==>
-   [A-N].
-parse(A) ==>
-   [A-1].
+parse(Coeff, A) ==>
+   [A-Coeff].
 
 inverse([]) --> [].
 inverse([A-N | L]) -->
@@ -169,7 +162,7 @@ multiply([H | T], Expr) :-
    foldl([B, A, A*B]>>true, T, H, Expr).
 
 normalize(In, Out) :-
-   phrase(parse(In), L),
+   parse(In, L),
    normalize_factors(L, L1),
    generate_expression(L1, Out).
 
@@ -193,7 +186,7 @@ generate_expression(In, Out) :-
    num_denom(Num1, Denom2, Out).
 
 parse_normalize_factors(In, L3) :-
-   phrase(parse(In), L),
+   parse(In, L),
    normalize_factors(L, L3).
 normalize_factors(L, L2) :-
    msort(L, L1),

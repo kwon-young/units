@@ -2,12 +2,94 @@
 
 Units is a quantity and units library modeled after [`mp-units`](https://mpusz.github.io/mp-units/latest/).
 
+The key features are:
+
+* `qeval/1` wrapper predicate for all arithmetic with units and quantities
+* Large amount of predefined units and quantities
+* safe arithmetic with units, quantities and quantity points
+* easy user customization through multi-file predicates
+
+## Installation
+
+You can install this pack with:
+
+```bash
+$ swipl pack install units
+```
+
+## Quick Start
+
+To use this library, just wrap all your arithmetic in the `qeval/1` predicate.
+Use multiplication `*` to create quantities:
+
+```prolog
+?- use_module(library(units)).
+?- qeval(X is 3*metre).
+X = 3*kind_of(isq:length)[si:metre].
+```
+
+## Quantity
+
+A quantity is a concrete amount of a unit.
+It is modeled in the library with the following term: `Amount * QuantityType[Unit]`.
+
+* `Amount` should be a number: 1, 20 or `pi`. Anything that can be used with regular prolog arithmetic.
+* `Unit` should be a unit of the shape `System:UnitName`, e.g. `si:metre` or `si:second`.
+  This normalized form is composed of two parts:
+    * `System` should be an atom denoting the system of units used: `si` or `international`
+    * `UnitName` should be an atom denoting the unit in the system. `1` denotes that the amount is unitless.
+* `QuantityType` should be a quantity type of the shape `System:QuantityName`, e.g. `isq:speed` or `isq:length`.
+  The quantity name `1` denotes that the amount is dimensionless.
+
+For example, a speed of `3 metre/second` would be represented as `3 * isq:speed[si:metre/si:second]`.
+
+> :warning: `3*isq:speed[si:metre/si:second]` is a quantity and `isq:speed` is a quantity **type**.
+
+To create a quantity, you can multiply a number with a predefined unit:
+
+```prolog
+?- use_module(library(units)).
+
+?- qeval(Q is 3 * si:metre / si:second).
+Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
+```
+
+As you can see, `Q` is a quantity of amount 3, unit `si:metre/si:second` and quantity type `kind_of(isq:length/isq:time)`.
+This quantity type was derived from the units used in the expression:
+
+* `si:metre` can be any *kind of* length
+* `si:second` can be any *kind of* time
+
+For convenience, the same units can be used without their system (the `si:` prefix) or with their symbol (`m` for metre and `s` for second):
+
+```prolog
+?- qeval(Q is 3 * m / s).
+Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
+```
+
+> :warning: The same symbol can be used for multiple units in the library.
+> There are currently no mechanism to avoid name collision, so be extra careful when using them.
+
+Quantities of the same kind can be added, subtracted and compared:
+
+```prolog
+?- qeval(1 * km + 50 * m =:= 1050 * m).
+true.
+```
+
+Quantities of various kind can be multiplied or divided:
+
+```prolog
+?- qeval(140 * km / (2 * hour) =:= 70 * km/hour).
+true
+```
+
 Here is a quick preview of what is possible:
 
 ```prolog
 :- use_module(library(units)).
 
-% simple numeric operations
+% use multiplication to associate
 ?- qeval(10*km =:= 2*5*km).
 
 % conversions to common units
@@ -30,38 +112,95 @@ Here is a quick preview of what is possible:
 A = 10 * kind(isq:length)[si:metre].
 ```
 
-The library can be used through a single predicate `qeval/1` which is a predicate that wraps any kind of arithmetic operations.
+### What are quantity types ?
 
-One of the specificity of the library is the combination of units and quantities.
-Please read the excellent `mp-units` [documentation](https://mpusz.github.io/mp-units/latest/users_guide/framework_basics/systems_of_quantities/) on the advantages of using quantities in addition to units.
+If you have already used units in a scientific context before, you will probably have heard of [**dimensional analysis**](https://w.wiki/_ohbG).
+The goal of dimensional analysis is to check the correctness of your expression.
+The process is to reduce units to their base quantities (or dimensions):
 
-Units and quantites can be used in multiple ways:
+* `3 * metre/second` has the dimensions `Length**1 * Time**-1`
 
-* for units
-    * `System:Unit`, example: `si:metre`. Currently, the `si` and `international` system are implemented.
-    * `System:UnitSymbol`, example: `si:m` for `si:metre`.
-    * `Unit`, example: `metre`
-    * `UnitSymbol`, example: `m` for `si:metre`
-    * `System:Prefix(Unit)`, example: `si:kilo(metre)`
-    * `System:Prefix(OtherSystem:Unit)`, example: `si:kilo(international:pound_force)`
-    * `Prefix(Unit)`, example: `kilo(metre)`
-    * `PrefixSymbolUnitSymbol`, example: `km` for `kilo(metre)`
-    * through aliases, but only a few are defined like `kilogram` for `si:kilo(gram)` or `hectare` for `si:hecto(are)`
-* for quantities
-    * `System:Quantity`, example: `isq:length`. `isq` is the only system of quantity implemented.
-* for both at the same time
-    * `Quantity[Unit]`, example: `isq:length[si:metre]`
+```prolog
+?- qeval(X*Q[U] is 3*m/s), units:quantity_dimensions(Q, D).
+X = 3,
+Q = kind_of(isq:length/isq:time),
+U = si:metre/si:second,
+D = isq:dim_length/isq:dim_time.
+```
+
+Once this is done, you can check the correctness of your expression.
+For example, addition, subtraction or comparison should be done on expression with the exact same dimensions:
+
+* you can add `1 * metre/second + 1 * inch/hour`
+* you can't add `1 * metre/second + 1 * metre * second`
+
+```prolog
+?- qeval(X is 1*metre/second + 1*inch/hour).
+X = 1.0000070555555556*kind_of(isq:length/isq:time)[si:metre/si:second].
+?- qeval(X is 1*metre/second + 1*metre*second).
+ERROR: Domain error: `kind_of(isq:length/isq:time)' expected, found `kind_of(isq:length*isq:time)'
+```
+
+While this is a very good system to check the correctness of your expression, it is a bit simplistic for various reasons.
+
+Let's say you want to compute the aspect ratio of a rectangle:
+
+```prolog
+rect_ratio(Width, Height, Ratio) :-
+  qeval(Ratio is Width / Height).
+```
+
+Let's try and use this predicate with a rectangle of width `1*metre` and height `2*metre`.
+
+```prolog
+?- Width = 1*metre, Height = 2*metre,
+   rect_ratio(Width, Height, Ratio).
+Width = 1*metre,
+Height = 2*metre,
+Ratio = 0.5*kind_of(1)[1].
+```
+
+But, what if we made a mistake and inverted width with height ?
+
+```prolog
+?- Width = 1*metre, Height = 2*metre,
+rect_ratio(Height, Width, Ratio).
+Width = 1*metre,
+Height = 2*metre,
+Ratio = 2*kind_of(1)[1].
+```
+
+We get a wrong aspect ratio with no indication that something is wrong.
+This is because `Width` and `Height` are both a kind of `isq:length` here.
+Therefore, we can't detect that something is wrong.
+
+By using strong quantities, we can improve the safety of this code:
+
+```prolog
+rect_ratio(Width, Height, Ratio) :-
+  qeval(Ratio is (Width as isq:width) / (Height as isq:height)).
+
+?- Width = 1*isq:width[metre], Height = 2*isq:height[metre],
+   rect_ratio(Width, Height, Ratio).
+Width = 1*isq:width[metre],
+Height = 2*isq:height[metre],
+Ratio = 0.5*(isq:width/isq:height)[1].
+
+?- Width = 1*isq:width[metre], Height = 2*isq:height[metre],
+   rect_ratio(Height, Width, Ratio).
+ERROR: Domain error: `isq:height' expected, found `isq:width'
+```
+
+Similar to the International System of Units (SI), there is the International System of Quantities (ISQ) that defines what are the 7 basic quantities, as well as hundreds of other related quantities.
+These new quantities forms a complex interconnected graph that defines which quantities are compatible and which are not.
 
 Here is a interesting use of the `speed` quantity that can be use to generically describe the ratio of any type of `length` by any type of `time`:
 
 ```prolog
-:- use_module(library(units)).
-
 avg_speed(Distance, Time, Speed) :-
-   qeval(S is Distance / Time),
-   Speed = S.as(isq:speed).
+   qeval(S is Distance / Time as isq:speed).
 
-?- avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, Speed),
+?- avg_speed(220 * si:kilo(metre), 2 * si:hour, Speed),
    qmust_be(isq:speed[si:kilo(metre)/si:hour], Speed).
 Speed = 110 * isq:speed[si:kilo(metre)/si:hour].
 
@@ -74,12 +213,104 @@ ERROR: Domain error: `kind(isq:mass)/kind(isq:time)' expected, found `isq:speed'
 
 The `qmust_be/2` predicate can be used to check the quantity and unit of a result.
 
+## Quantity Points
+
+Some quantities like temperature requires a specific origin from where we measure a displacement.
+For example, `si:kelvin` measures temperatures from the absolute zero and works like any other units (like metre or second).
+Although `si:degree_Celsius` are the same as `si:kelvin` (`1*degree_Celsius =:= 1*kelvin`), they measure temperatures from different origins: `si:kelvin` from the absolute zero and `si:degree_Celsius` from the ice freezing point.
+
+To model this, the original `mp-units` library introduced the notion of quantity points.
+In this system, quantities are actually quantity **vectors**, meaning they represent a quantity change, or a displacement of some sort.
+To represent a measurement, we also need to represent origins: the ice freezing point for degree Celsius or the sea level for altitude.
+
+Therefore, A quantity point is the combination of an **origin** and a quantity **vector**.
+This library model them with the term `Origin + Quantity`.
+Origins are terms similar to units and can be either:
+* absolute: `si:absolute_zero` is not define in term of something else, it is absolute
+* relative: `si:zeroth_degree_Celsius` is defined as a point relative to `si:absolute_zero`, it is relative
+* 0 is the default origin of most units which don't have special origins
+
+Quantity points restrict the type of operation you can do with them.
+You can't:
+
+* add two points
+* subtract a point from a vector
+* multiply nor divide point with anything else
+
+## Supported arithmetic expression
+
+Here are the list of supported arithmetic expressions for quantities:
+
+* `R is Expr`: If `R` is a variable, it is interpreted as a **quantity** `V*Q[U]`
+* Comparison operators, `A` and `B` should have compatible quantity type and units:
+  * `A =:= B`: equality
+  * `A =\= B`: inequality
+  * `A < B`: less than
+  * `A =< B`: less than or equal
+  * `A > B`: greater than
+  * `A >= B`: greater than or equal
+* Unary operator
+  * `+A` and `-A`
+* Binary operator
+  * `A + B`, `A - B`: `A` and `B` should have compatible quantity type and units
+  * `A * B`
+  * `A / B`
+  * `A ** N` or `A ^ N`: `N` should be a number
+* Conversion predicates
+  * `Quantity in Unit`: convert the unit of `Quantity` into `Unit`, e.g. `metre in inch`
+  * `Quantity as QuantityType`: convert the quantity type of `Quantity` into `QuantityType`, e.g. `metre/second as isq:speed`
+* Disambiguation functor
+  * `quantity Q`: `Q` will be interpreted as a **quantity**, e.g. `V*Q[U]`
+  * `unit U`: `U` will be interpreted as a **unit**, e.g. `metre`
+  * `V`: variables are interpreted as a **value** (except for the left hand side of `is`)
+
+TODO: quantity point specific predicates
+
+TODO: exported predicate list
+
 ## clpBNR support
 
 One peculiar feature is that this library also supports clpBNR arithmetic:
 
 ```prolog
-?- qeval({A*metre == B*inch}), A = 1.
+?- qeval({A*metre =:= B*inch}), A = 1.
 A = 1,
 B = 5000r127.
 ```
+
+You can wrap your expression in `{}/1` to explicitly use clpBNR.
+The library will also default to clpBNR if the expression is not sufficiently ground to use traditional arithmetic:
+
+```prolog
+% be default, a variable on the left hand side of `is` is
+% interpreted as a quantity
+?- qeval(Speed is L*metre / T*second).
+Speed = _A*kind_of(isq:length*isq:time)[si:metre*si:second],
+::(_A, real(-1.0Inf, 1.0Inf)),
+::(L, real(-1.0Inf, 1.0Inf)),
+::(T, real(-1.0Inf, 1.0Inf)).
+
+% when using equality `=:=`, you need to disambiguate between
+% a clpBNR variable and a variable that should be bound to a quantity
+?- qeval(quantity(Speed) =:= L*metre / T*second).
+Speed = _A*kind_of(isq:length*isq:time)[si:metre*si:second],
+::(_A, real(-1.0Inf, 1.0Inf)),
+::(L, real(-1.0Inf, 1.0Inf)),
+::(T, real(-1.0Inf, 1.0Inf)).
+```
+
+One can also use a variable for units by wrapping it with `unit(Variable)`:
+
+```prolog
+?- qeval(Amount*unit(Unit) =:= 3*metre).
+Amount = 3,
+Unit = si:metre.
+```
+
+## List of quantities and units
+
+Here are an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
+
+TODO: hierarchical graph of all quantities to show which conversions are possible
+
+## 

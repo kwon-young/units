@@ -264,6 +264,7 @@ Here are the list of supported arithmetic expressions for quantities:
   * `unit U`: `U` will be interpreted as a **unit**, e.g. `metre`
   * `V`: variables are interpreted as a **value** (except for the left hand side of `is`)
 
+<!-- AI!: help me document quantity point predicates -->
 TODO: quantity point specific predicates
 
 TODO: exported predicate list

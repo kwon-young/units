@@ -275,9 +275,34 @@ Here are the list of supported arithmetic expressions for quantities:
   * `quantity_from(Expr, Origin)`: Computes the quantity vector from a given `Origin` to the point `Expr`. This is equivalent to `Expr - Origin`.
   * `point_for(Expr, NewOrigin)`: Represents the point `Expr` from the perspective of `NewOrigin`. For example, if `Expr` is `OriginA + QV_A`, this predicate calculates `QV_B` such that `NewOrigin + QV_B` is the same absolute point as `Expr`.
 
-<!-- AI! document the library(error) must_be/2 integration -->
+### Type Checking with `must_be/2`
 
-TODO: library(error) `must_be/2` integration
+This library integrates with SWI-Prolog's `library(error)` to allow type checking using `must_be/2`. You can use `must_be/2` to assert that a term is a specific quantity type.
+
+For example, to ensure a variable `Speed` is indeed a quantity of type `isq:speed`:
+```prolog
+?- use_module(library(error)).
+?- qeval(Speed is 10 * m/s), must_be(isq:speed, Speed).
+Speed = 10*isq:speed[si:metre/si:second].
+```
+
+If the term is not of the expected quantity type, `must_be/2` will throw an error:
+```prolog
+?- qeval(Dist is 10 * m), must_be(isq:speed, Dist).
+ERROR: Type error: `isq:speed' expected, found `10*isq:length[si:metre]' (a q)
+```
+You can also check for a generic quantity (any kind) using `quantity`:
+```prolog
+?- qeval(X is 3*m), must_be(quantity, X).
+X = 3*kind_of(isq:length)[si:metre].
+```
+Or a quantity of a specific kind, allowing for derived quantities that are compatible:
+```prolog
+?- qeval(Height is 2*inch), must_be(quantity(isq:length), Height).
+Height = 2*isq:length[international:inch].
+```
+
+This integration helps in writing more robust code by catching type errors related to physical quantities early.
 
 ## clpBNR support
 

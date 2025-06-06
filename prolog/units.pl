@@ -83,7 +83,6 @@ qformat(M) :-
    ),
    format("~h~s~w", [M.v, Space, Symbol]).
 
-% AI this is library(error) must_be integration
 is_quantity(Term, R) :-
    catch(eval_(Term, R), _, fail),
    is_dict(R, q),

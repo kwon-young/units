@@ -348,7 +348,7 @@ Unit = si:metre.
 
 Here is an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
 
-TODO: hierarchical graph of all quantities to show which conversions are possible
+You will also find a hierarchical graph representation of quantities in [quantities.pdf](quantities.pdf)
 
 ## User customization
 

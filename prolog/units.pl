@@ -99,6 +99,11 @@ is_quantity(Term, R) :-
    ;  normalize_unit(U, _)
    ),
    get_dict(v, R, _).
+
+% TODO: missing support for quantity points and units
+error:has_type(quantity, Term) :-
+   !,
+   is_quantity(Term, _).
 error:has_type(quantity(Quantity), Term) :-
    (  alias_derived_quantity(Quantity)
    -> true

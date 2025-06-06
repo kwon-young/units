@@ -338,8 +338,10 @@ alias_quantity(Quantity) =>
 
 alias_derived_quantity(Quantity), \+ ground(Quantity) =>
    when(ground(Quantity), alias_derived_quantity(Quantity)).
+alias_derived_quantity(kind_of(Kind)) =>
+   derived_root_kind(Kind).
 alias_derived_quantity(Quantity) =>
-   mapexpr(alias_quantity, Quantity).
+   mapexpr1(alias_quantity, [_]>>fail, Quantity).
 
 alias_parent(Alias, Parent) :-
    alias(Alias, Quantity),

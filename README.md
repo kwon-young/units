@@ -17,6 +17,13 @@ You can install this pack with:
 $ swipl pack install units
 ```
 
+### Dependencies
+
+This library depends on:
+
+* swi-prolog >= 9.3.23
+* clpBNR
+
 ## Quick Start
 
 To use this library, just wrap all your arithmetic in the `qeval/1` predicate.

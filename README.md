@@ -263,8 +263,14 @@ Here are the list of supported arithmetic expressions for quantities:
   * `quantity Q`: `Q` will be interpreted as a **quantity**, e.g. `V*Q[U]`
   * `unit U`: `U` will be interpreted as a **unit**, e.g. `metre`
   * `V`: variables are interpreted as a **value** (except for the left hand side of `is`)
+* Quantity point specific predicates:
+  * `point(Expr)`: Interprets `Expr` as a quantity and creates a quantity point. The origin is inferred from the unit of `Expr` if defined (e.g. `degree_Celsius`), otherwise it defaults to `0`. Example: `point(10 * metre)` results in `0 + 10 * kind_of(isq:length)[si:metre]`. `point(20 * degree_Celsius)` results in `si:zeroth_degree_Celsius + 20 * kind_of(isq:temperature_difference)[si:kelvin]`.
+  * `quantity_point(QP)`: Ensures `QP` is treated as a quantity point, typically in the form `Origin + Quantity`.
+  * `origin(Origin)`: Interprets `Origin` as a point of reference.
+  * `quantity_from_zero(Expr)`: Computes the quantity vector from the default origin `0` to the point `Expr`. This is equivalent to `Expr - origin(0)`.
+  * `quantity_from(Expr, Origin)`: Computes the quantity vector from a given `Origin` to the point `Expr`. This is equivalent to `Expr - Origin`.
+  * `point_for(Expr, NewOrigin)`: Represents the point `Expr` from the perspective of `NewOrigin`. For example, if `Expr` is `OriginA + QV_A`, this predicate calculates `QV_B` such that `NewOrigin + QV_B` is the same absolute point as `Expr`.
 
-<!-- AI!: help me document quantity point predicates -->
 TODO: quantity point specific predicates
 
 TODO: exported predicate list

@@ -237,7 +237,11 @@ You can't:
 * subtract a point from a vector
 * multiply nor divide point with anything else
 
-## Supported arithmetic expression
+## Exported predicates and supported arithmetic expression
+
+* Exported predicates:
+  * `qeval(Expr)`: Evaluates the arithmetic expression `Expr` involving quantities, units, and quantity points. This is the primary predicate for performing calculations with the library. It handles all supported operators and conversions. For example, `qeval(X is 3*metre + 50*centimetre)` will bind `X` to the resulting quantity.
+  * `qformat(Quantity)`: Formats the given `Quantity` into a human-readable string using symbols for units.
 
 Here are the list of supported arithmetic expressions for quantities:
 
@@ -270,10 +274,8 @@ Here are the list of supported arithmetic expressions for quantities:
   * `quantity_from_zero(Expr)`: Computes the quantity vector from the default origin `0` to the point `Expr`. This is equivalent to `Expr - origin(0)`.
   * `quantity_from(Expr, Origin)`: Computes the quantity vector from a given `Origin` to the point `Expr`. This is equivalent to `Expr - Origin`.
   * `point_for(Expr, NewOrigin)`: Represents the point `Expr` from the perspective of `NewOrigin`. For example, if `Expr` is `OriginA + QV_A`, this predicate calculates `QV_B` such that `NewOrigin + QV_B` is the same absolute point as `Expr`.
-* `qeval(Expr)`: Evaluates the arithmetic expression `Expr` involving quantities, units, and quantity points. This is the primary predicate for performing calculations with the library. It handles all supported operators and conversions. For example, `qeval(X is 3*metre + 50*centimetre)` will bind `X` to the resulting quantity.
-* `qformat(Quantity)`: Formats the given `Quantity` (typically the result of a `qeval/1` call) into a human-readable string. For example, if `Q` is `3.5*kind_of(isq:length)[si:metre]`, `qformat(Q)` would print something like "3.5 m". It respects conventions like omitting the space before certain unit symbols (e.g., degree symbol).
 
-TODO: exported predicate list
+TODO: library(error) `must_be/2` integration
 
 ## clpBNR support
 

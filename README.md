@@ -107,7 +107,7 @@ Here is a quick preview of what is possible:
 
 ?- qeval(1000 / (1 * s) =:= 1 * kHz).
 
-% assignement and comparison 
+% assignment and comparison 
 ?- qeval(A is 10*m), qeval(A < 20*km).
 A = 10 * kind(isq:length)[si:metre].
 ```
@@ -226,7 +226,7 @@ To represent a measurement, we also need to represent origins: the ice freezing 
 Therefore, A quantity point is the combination of an **origin** and a quantity **vector**.
 This library model them with the term `Origin + Quantity`.
 Origins are terms similar to units and can be either:
-* absolute: `si:absolute_zero` is not define in term of something else, it is absolute
+* absolute: `si:absolute_zero` is not defined in term of something else, it is absolute
 * relative: `si:zeroth_degree_Celsius` is defined as a point relative to `si:absolute_zero`, it is relative
 * 0 is the default origin of most units which don't have special origins
 
@@ -309,7 +309,7 @@ Unit = si:metre.
 
 ## List of quantities and units
 
-Here are an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
+Here is an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
 
 TODO: hierarchical graph of all quantities to show which conversions are possible
 

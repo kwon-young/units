@@ -12,6 +12,7 @@
    op(100, yf,  []),
    op(99, xfy, :),
 
+   qeval/1,
    qformat/1,
 
    alias/2,
@@ -29,9 +30,7 @@
    unit_kind/2,
    unit_origin/2,
    unit_symbol/2,
-   unit_symbol_formula/3,
-
-   qeval/1
+   unit_symbol_formula/3
 ]).
 :- reexport([units/q]).
 :- reexport([units/qp]).

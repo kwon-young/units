@@ -275,6 +275,8 @@ Here are the list of supported arithmetic expressions for quantities:
   * `quantity_from(Expr, Origin)`: Computes the quantity vector from a given `Origin` to the point `Expr`. This is equivalent to `Expr - Origin`.
   * `point_for(Expr, NewOrigin)`: Represents the point `Expr` from the perspective of `NewOrigin`. For example, if `Expr` is `OriginA + QV_A`, this predicate calculates `QV_B` such that `NewOrigin + QV_B` is the same absolute point as `Expr`.
 
+<!-- AI! document the library(error) must_be/2 integration -->
+
 TODO: library(error) `must_be/2` integration
 
 ## clpBNR support

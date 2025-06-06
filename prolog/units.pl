@@ -83,6 +83,7 @@ qformat(M) :-
    ),
    format("~h~s~w", [M.v, Space, Symbol]).
 
+% AI this is library(error) must_be integration
 is_quantity(Term, R) :-
    catch(eval_(Term, R), _, fail),
    is_dict(R, q),
@@ -262,7 +263,7 @@ iterative_deepening(Limit, Goal) :-
 is_of(unit, U-_) :-
    unit(U, _).
 is_of(quantity, Q-_) :-
-   alias_quantity(Q).
+   alias_quantity_(Q).
 
 :- meta_predicate partition_soft(1,+,-,-).
 
@@ -1274,5 +1275,8 @@ test('temperature') :-
    qeval(_ is si:zeroth_degree_Celsius + 20.5 * degree_Celsius),
    qeval(_ is point(20.5 * degree_Celsius)),
    true.
+
+test('radian') :-
+   qeval(_ is m/m in radian).
 
 :- end_tests(units).

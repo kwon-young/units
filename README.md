@@ -345,4 +345,29 @@ TODO: hierarchical graph of all quantities to show which conversions are possibl
 
 ## User customization
 
-TODO
+You can extend the library by defining your own custom units and quantities.
+This is achieved by adding clauses to the library's multifile predicates. The file [currency.pl](examples/currency.pl) file provides a practical example of how to do this.
+
+Here's a breakdown of the key predicates you'll use:
+
+1.  **Define a new quantity dimension**:
+    Use `units:quantity_dimension(QuantityName, Symbol)` to declare a new base quantity and its symbol. For example, to define `currency` with symbol `'$'`:
+    ```prolog
+    units:quantity_dimension(currency, '$').
+    ```
+
+2.  **Define new unit**:
+    Use `units:unit_symbol(UnitName, Symbol)` to associate a unit name with its display symbol. For example, for euros and US dollars:
+    ```prolog
+    units:unit_symbol(euro, €).
+    units:unit_symbol(us_dollar, usd).
+    ```
+
+3.  **Associate units with their quantity kind**:
+    Use `units:unit_kind(UnitName, QuantityName)` to link a unit to its corresponding quantity type. This tells the system what kind of quantity the unit represents.
+    ```prolog
+    units:unit_kind(euro, currency).
+    units:unit_kind(us_dollar, currency).
+    ```
+
+By defining these predicates, your custom units and quantities will be integrated into the system, allowing them to be used with `qeval/1` and other library features.

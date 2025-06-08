@@ -186,3 +186,18 @@ mapexpr(Goal, Failure, A, A1) =>
    *-> true
    ;  call(Failure, A, A1)
    ).
+
+:- begin_tests(utils).
+
+normalize_test_data(metre * second / second, metre).
+normalize_test_data(metre * second**2 / second, metre*second).
+normalize_test_data(kilogram * metre / second / second, kilogram*metre/second**2).
+normalize_test_data(metre/metre, 1).
+normalize_test_data(c * a * b, a*b*c). % Test sorting
+normalize_test_data(joule/second*second, joule). % Test cancellation with existing term
+
+test(normalize_examples, [forall(normalize_test_data(Input, ExpectedOutput))]) :-
+    normalize(Input, Output),
+    assertion(Output == ExpectedOutput).
+
+:- end_tests(utils).

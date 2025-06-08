@@ -33,7 +33,7 @@
    unit_symbol_formula/3
 ]).
 
-/** @module units
+/** <module> units
  *
  *  Units is a quantity and units library modeled after
  *  [`mp-units`](https://mpusz.github.io/mp-units/latest/).
@@ -44,7 +44,7 @@
  *  * Large amount of predefined units and quantities
  *  * safe arithmetic with units, quantities and quantity points
  *  * easy user customization through multi-file predicates
- */
+ **/
 
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
@@ -344,7 +344,6 @@ units:dimension_symbol(dim_1, '').
 units:quantity_parent(1, dim_1).
 units:unit_kind(1, 1).
 
-:- use_module(units/q).
 :- use_module(units/systems/isq).
 :- use_module(units/systems/si).
 :- use_module(units/systems/angular).

@@ -33,6 +33,19 @@
    unit_symbol_formula/3
 ]).
 
+/** @module units
+ *
+ *  Units is a quantity and units library modeled after
+ *  [`mp-units`](https://mpusz.github.io/mp-units/latest/).
+ *
+ *  The key features are:
+ *
+ *  * `qeval/1` wrapper predicate for all arithmetic with units and quantities
+ *  * Large amount of predefined units and quantities
+ *  * safe arithmetic with units, quantities and quantity points
+ *  * easy user customization through multi-file predicates
+ */
+
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
 :- use_module(library(error)).

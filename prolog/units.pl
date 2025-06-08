@@ -409,6 +409,18 @@ error:has_type(Quantity, Term) :-
    ),
    implicitly_convertible(Q, Quantity).
 
+normalize(In, Out) :-
+   parse(In, L),
+   normalize_factors(L, L1),
+   generate_expression(L1, Out).
+
+normalize_dimension(In, Out) :-
+   normalize(In, N),
+   (  N == 1
+   -> Out = dim_1
+   ;  Out = N
+   ).
+
 parse(Expr, Factors) :-
    phrase(parse(1, Expr), Factors).
 
@@ -424,6 +436,14 @@ parse(_, dim_1) ==>
 parse(Coeff, A) ==>
    [A-Coeff].
 
+normalize_factors(L, L2) :-
+   msort(L, L1),
+   aggregate(L1, L2).
+
+parse_normalize_factors(In, L3) :-
+   parse(In, L),
+   normalize_factors(L, L3).
+
 aggregate(L, L2) :-
    group_pairs_by_key(L, Groups),
    maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L1),
@@ -438,30 +458,12 @@ simplify([H | T], R) =>
    R = [H | L],
    simplify(T, L).
 
-num_denom([], Denom, Expr) :-
-   denom(Denom, 1, Expr).
-num_denom([H | T], Denom, Expr) :-
-   multiply([H | T], Num),
-   denom(Denom, Num, Expr).
-
-denom([], Num, Num).
-denom([H | T], Num, Num/Expr) :-
-   multiply([H | T], Expr).
-
-multiply([H | T], Expr) :-
-   foldl([B, A, A*B]>>true, T, H, Expr).
-
-normalize(In, Out) :-
-   parse(In, L),
-   normalize_factors(L, L1),
-   generate_expression(L1, Out).
-
-normalize_dimension(In, Out) :-
-   normalize(In, N),
-   (  N == 1
-   -> Out = dim_1
-   ;  Out = N
-   ).
+generate_expression(In, Out) :-
+   partition(is_num, In, Num, Denom),
+   maplist(power, Num, Num1),
+   phrase(inverse(Denom), Denom1),
+   maplist(power, Denom1, Denom2),
+   num_denom(Num1, Denom2, Out).
 
 is_num(_-N) :- N > 0.
 
@@ -474,19 +476,18 @@ inverse([A-N | L]) -->
    [A-N1],
    inverse(L).
 
-generate_expression(In, Out) :-
-   partition(is_num, In, Num, Denom),
-   maplist(power, Num, Num1),
-   phrase(inverse(Denom), Denom1),
-   maplist(power, Denom1, Denom2),
-   num_denom(Num1, Denom2, Out).
+num_denom([], Denom, Expr) :-
+   denom(Denom, 1, Expr).
+num_denom([H | T], Denom, Expr) :-
+   multiply([H | T], Num),
+   denom(Denom, Num, Expr).
 
-parse_normalize_factors(In, L3) :-
-   parse(In, L),
-   normalize_factors(L, L3).
-normalize_factors(L, L2) :-
-   msort(L, L1),
-   aggregate(L1, L2).
+denom([], Num, Num).
+denom([H | T], Num, Num/Expr) :-
+   multiply([H | T], Expr).
+
+multiply([H | T], Expr) :-
+   foldl([B, A, A*B]>>true, T, H, Expr).
 
 :- meta_predicate mapexpr(1, ?).
 

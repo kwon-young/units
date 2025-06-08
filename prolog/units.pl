@@ -14,6 +14,7 @@
 
    qeval/1,
    qformat/1,
+   qformat/2,
 
    alias/2,
    dimension_symbol/2,
@@ -344,13 +345,53 @@ units:unit_kind(1, 1).
 :- use_module(units/systems/international).
 :- use_module(units/systems/usc).
 
+%% qformat(+QuantityOrExpr) is det.
+%
+%  This predicate is a convenience wrapper around `qformat/2`.
+%  It uses a default format (`"~p"`) for the numerical value of the quantity.
 qformat(M) :-
-   mapexpr(unit, M.u, Symbol),
-   (  alias_no_space_before_unit_symbol(Symbol)
-   -> Space = ""
-   ;  Space = " "
+   qformat("~p", M).
+
+%% qformat(+ValueFormat, +QuantityOrExpr) is det.
+%
+%  Formats a quantity expression or an evaluated quantity term using a specific
+%  `ValueFormat` for its numerical value, and prints the result to the current
+%  output stream.
+%
+%  The output consists of the numerical value formatted according to `ValueFormat`,
+%  followed by a space (unless suppressed by `no_space_before_unit_symbol/1`),
+%  and then the symbol of the unit. If the unit is `1` (dimensionless),
+%  no symbol or space is printed after the value.
+%
+%  Examples:
+%  ==
+%  ?- qformat("~2f", 1.23456 * si:metre).
+%  1.23 m
+%  true.
+%
+%  ?- qformat("~e", 12345 * si:pascal).
+%  1.234500e+04 Pa
+%  true.
+%  ==
+%
+%  @param ValueFormat A Prolog format string for the numerical value part of the
+%                     quantity (e.g., `"~2f"`, `"~e"`, `"~p"`).
+%  @param QuantityOrExpr An expression that `qeval/1` can evaluate to a quantity,
+%                        or an already evaluated quantity term.
+qformat(VFormat, M) :-
+   qeval(X is M),
+   X = V*_[U],
+   (  U == 1
+   -> Symbol = "",
+      Space = ""
+   ;  mapexpr(unit, U, Symbol),
+      (  alias_no_space_before_unit_symbol(U)
+      -> Space = ""
+      ;  Space = " "
+      )
    ),
-   format("~h~s~w", [M.v, Space, Symbol]).
+   string_concat(VFormat, "~s~w", Format),
+   format(Format, [V, Space, Symbol]).
 
 error:has_type(quantity, Term) :-
    !,
@@ -1600,5 +1641,19 @@ test('temperature') :-
 
 test('radian') :-
    qeval(_ is m/m in radian).
+
+test('qformat', [
+   forall(qformat_data(Expr, ExpectedString))
+]) :-
+   qeval(QuantityDict is Expr),
+   with_output_to(string(FormattedString), qformat(QuantityDict)),
+   assertion(FormattedString == ExpectedString).
+
+qformat_data(10 * si:metre, "10 m").
+qformat_data(25 * si:degree, "25°"). % Note: no_space_before_unit_symbol
+qformat_data(5 * si:newton, "5 N").
+qformat_data(1.5 * si:kilo(si:hertz), "1.5 kHz").
+qformat_data(10, "10"). % Dimensionless with unit 1
+qformat_data(10 * (si:metre/si:second), "10 m/s").
 
 :- end_tests(units).

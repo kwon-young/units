@@ -12,31 +12,21 @@
 
 %% normalize(+Expression, -NormalizedExpression) is det.
 %
-%  Converts an `Expression` into a canonical, simplified form.
+%  Converts an arithmetic `Expression` (using `*`, `/`, `**`) into a
+%  canonical, simplified form.
 %
-%  `Expression` is typically an arithmetic expression involving units,
-%  quantities, or numerical values, using operators `*`, `/`, and `**` (power).
-%  The normalization process involves:
+%  The process involves:
+%  1. Parsing `Expression` into base terms with effective exponents.
+%  2. Sorting terms alphabetically.
+%  3. Aggregating identical terms by summing exponents.
+%  4. Removing terms with a zero exponent.
+%  5. Reconstructing `NormalizedExpression` with positive exponent terms in
+%     the numerator and (originally) negative exponent terms in the
+%     denominator (shown with positive exponents).
+%     If all terms cancel, `NormalizedExpression` is `1`.
 %
-%  1. Parsing the `Expression` into a list of base terms, each associated with
-%     an effective exponent. For example, `metre * second / second**2` would
-%     internally be processed considering `metre` with exponent 1, and `second`
-%     with exponent `1 - 2 = -1`.
-%  2. Sorting the base terms alphabetically.
-%  3. Aggregating identical base terms by summing their exponents. For instance,
-%     `metre * metre` becomes `metre` with exponent 2.
-%  4. Removing any terms whose resulting exponent is zero.
-%  5. Reconstructing the `NormalizedExpression`:
-%     - Terms with positive exponents form the numerator.
-%     - Terms that had negative exponents (after aggregation) form the
-%       denominator, shown with positive exponents.
-%     - If all terms cancel out (e.g., `metre/metre`), `NormalizedExpression`
-%       becomes the atom `1`.
-%     - The order of terms in the numerator and denominator is alphabetical.
-%
-%  This predicate is crucial for comparing and simplifying unit expressions,
-%  quantity dimension expressions, and compound numerical factors throughout
-%  the `units` library.
+%  This is vital for consistent comparison and simplification of unit,
+%  quantity, and numerical factor expressions.
 %
 %  Examples:
 %  ==

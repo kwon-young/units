@@ -83,39 +83,23 @@ qformat(M) :-
    ),
    format("~h~s~w", [M.v, Space, Symbol]).
 
-is_quantity(Term, R) :-
-   catch(eval_(Term, R), _, fail),
-   is_dict(R, q),
-   get_dict(q, R, Q),
-   (  var(Q)
-   -> true
-   ;  Q = kind_of(K)
-   -> derived_root_kind(K)
-   ;  alias_derived_quantity(Q)
-   ),
-   get_dict(u, R, U),
-   (  var(U)
-   -> true
-   ;  normalize_unit(U, _)
-   ),
-   get_dict(v, R, _).
-
-% TODO: missing support for quantity points and units
 error:has_type(quantity, Term) :-
    !,
    is_quantity(Term, _).
-error:has_type(quantity(Quantity), Term) :-
-   (  alias_derived_quantity(Quantity)
-   -> true
-   ;  domain_error(quantity, Quantity)
-   ),
-   is_quantity(Term, R),
-   implicitly_convertible(R.q, Quantity).
+error:has_type(quantity_point, Term) :-
+   !,
+   is_quantity_point(Term, _).
 error:has_type(Quantity, Term) :-
    ground(Quantity),
    alias_derived_quantity(Quantity),
    !,
-   error:has_type(quantity(Quantity), Term).
+   catch(eval_(Term, R), _, fail),
+   (  is_dict(R, q)
+   -> Q = R.q
+   ;  is_dict(R, qp),
+      Q = R.q.q
+   ),
+   implicitly_convertible(Q, Quantity).
 
 parse(Expr, Factors) :-
    phrase(parse(1, Expr), Factors).

@@ -22,7 +22,6 @@
    quantity_formula/2,
    quantity_parent/2,
 
-   prefix/3,
    absolute_point_origin/2,
    no_space_before_unit_symbol/1,
    prefix/3,
@@ -1113,7 +1112,7 @@ test('not_common_quantity', [fail]) :-
 test('explicitly_convertible', [forall(implicitly_convertible_data(Q1, Q2))]) :-
    explicitly_convertible(Q1, Q2).
 
-test('explicitly_convertible', [forall(explicitly_convertible_data(Q1, Q2))]) :-
+test('explicitly_convertible2', [forall(explicitly_convertible_data(Q1, Q2))]) :-
    explicitly_convertible(Q1, Q2).
 
 not_explicitly_convertible_data(isq:height, isq:width).

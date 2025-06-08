@@ -13,19 +13,14 @@
 %% normalize(+Expression, -NormalizedExpression) is det.
 %
 %  Converts an arithmetic `Expression` (using `*`, `/`, `**`) into a
-%  canonical, simplified form.
+%  canonical, simplified form. It parses the expression into base terms
+%  with exponents, sorts them, aggregates identical terms by summing
+%  exponents, removes zero-exponent terms, and reconstructs the
+%  `NormalizedExpression`. Numerator terms have positive exponents;
+%  denominator terms (originally negative) are shown with positive
+%  exponents. If all terms cancel, `NormalizedExpression` is `1`.
 %
-%  The process involves:
-%  1. Parsing `Expression` into base terms with effective exponents.
-%  2. Sorting terms alphabetically.
-%  3. Aggregating identical terms by summing exponents.
-%  4. Removing terms with a zero exponent.
-%  5. Reconstructing `NormalizedExpression` with positive exponent terms in
-%     the numerator and (originally) negative exponent terms in the
-%     denominator (shown with positive exponents).
-%     If all terms cancel, `NormalizedExpression` is `1`.
-%
-%  This is vital for consistent comparison and simplification of unit,
+%  Essential for consistent comparison and simplification of unit,
 %  quantity, and numerical factor expressions.
 %
 %  Examples:

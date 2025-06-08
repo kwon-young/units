@@ -32,8 +32,6 @@
    unit_symbol/2,
    unit_symbol_formula/3
 ]).
-% :- reexport([units/q]).
-% :- reexport([units/qp]).
 
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).

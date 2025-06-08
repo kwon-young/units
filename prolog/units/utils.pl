@@ -10,6 +10,58 @@
    mapexpr/4
 ]).
 
+%% normalize(+Expression, -NormalizedExpression) is det.
+%
+%  Converts an `Expression` into a canonical, simplified form.
+%
+%  `Expression` is typically an arithmetic expression involving units,
+%  quantities, or numerical values, using operators `*`, `/`, and `**` (power).
+%  The normalization process involves:
+%
+%  1. Parsing the `Expression` into a list of base terms, each associated with
+%     an effective exponent. For example, `metre * second / second**2` would
+%     internally be processed considering `metre` with exponent 1, and `second`
+%     with exponent `1 - 2 = -1`.
+%  2. Sorting the base terms alphabetically.
+%  3. Aggregating identical base terms by summing their exponents. For instance,
+%     `metre * metre` becomes `metre` with exponent 2.
+%  4. Removing any terms whose resulting exponent is zero.
+%  5. Reconstructing the `NormalizedExpression`:
+%     - Terms with positive exponents form the numerator.
+%     - Terms that had negative exponents (after aggregation) form the
+%       denominator, shown with positive exponents.
+%     - If all terms cancel out (e.g., `metre/metre`), `NormalizedExpression`
+%       becomes the atom `1`.
+%     - The order of terms in the numerator and denominator is alphabetical.
+%
+%  This predicate is crucial for comparing and simplifying unit expressions,
+%  quantity dimension expressions, and compound numerical factors throughout
+%  the `units` library.
+%
+%  Examples:
+%  ==
+%  ?- normalize(metre * second / second, Metres).
+%  Metres = metre.
+%
+%  ?- normalize(metre * second**2 / second, MetreSeconds).
+%  MetreSeconds = metre*second.
+%
+%  ?- normalize(kilogram * metre / second / second, NewtonExpr).
+%  NewtonExpr = kilogram*metre/second**2.
+%
+%  ?- normalize(metre/metre, One).
+%  One = 1.
+%
+%  ?- normalize(c * a * b, Sorted).
+%  Sorted = a*b*c.
+%
+%  ?- normalize(joule/second*second, Joules).
+%  Joules = joule.
+%  ==
+%
+%  @param Expression The input expression to normalize.
+%  @param NormalizedExpression The canonical, simplified form of `Expression`.
+
 normalize(In, Out) :-
    parse(In, L),
    normalize_factors(L, L1),

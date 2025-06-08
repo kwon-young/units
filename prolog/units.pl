@@ -41,20 +41,290 @@
 :- use_module(library(apply)).
 :- use_module(library(apply_macros)).
 
+%% alias(?AliasName, ?CanonicalName) is nondet.
+%
+%  Defines an alternative name (alias) for a canonical unit, quantity, or origin name.
+%  This predicate is multifile, allowing users and other modules to define new aliases.
+%
+%  Examples:
+%  ==
+%  units:alias(my_meter, si:metre).
+%  ==
+%
+%  @param AliasName The alternative name.
+%  @param CanonicalName The original, canonical name of the unit, quantity, or origin.
 :- multifile alias/2.
+
+%% dimension_symbol(?DimensionName, ?Symbol) is nondet.
+%
+%  Defines a quantity dimension with its symbolic representation.
+%  This predicate is multifile, allowing users and other modules to define new dimensions.
+%
+%  Examples:
+%  ==
+%  units:dimension_symbol(isq:dim_length, 'L').  % Length dimension
+%  units:dimension_symbol(isq:dim_time, 'T').    % Time dimension
+%  units:dimension_symbol(my_dim_currency, '$'). % Custom currency dimension
+%  ==
+%
+%  @param DimensionName The name of the quantity dimension (e.g., `isq:dim_mass`).
+%  @param Symbol The symbolic representation of the dimension (e.g., `'M'`).
 :- multifile dimension_symbol/2.
+
+%% kind(?KindName) is nondet.
+%
+%  Declares a `KindName` as a distinct "kind" of quantity.
+%  This predicate is multifile, allowing users and other modules to define new kinds.
+%
+%  Base quantities (e.g., `isq:length`) are inherently kinds.
+%  `kind/1` establishes other terms as distinct quantity kinds, often for specialization.
+%  For example, `isq:angular_measure` is declared a `kind`.
+%  Although its underlying dimension is `1` (dimensionless), this declaration makes it
+%  distinct from generic dimensionless quantities.
+%  Consequently, an angular measure (e.g., in radians) is not implicitly convertible
+%  to a simple unitless number, enhancing type safety by requiring explicit conversion
+%  if such a transformation is intended.
+%
+%  Examples:
+%  ==
+%  units:kind(isq:angular_measure).       % A specialized dimensionless quantity with unit si:radian.
+%  units:kind(isq:solid_angular_measure). % A specialized dimensionless quantity with unit si:steradian.
+%  units:kind(my_custom_fundamental_kind).% A user-defined kind.
+%  ==
+%
+%  @param KindName The atom or compound term representing the kind of quantity.
 :- multifile kind/1.
 :- multifile quantity_character/2.
+
+%% quantity_formula(?QuantityName, ?Formula) is nondet.
+%
+%  Associate a quantity `QuantityName` with a specific `Formula`.
+%  This predicate is multifile, allowing users and other modules to define new derived quantities.
+%
+%  This is particularly important for child quantities that have a "constrained" definition;
+%  for example, `isq:angular_measure` is specifically `isq:arc_length / isq:radius`.
+%  Such definitions enable implicit conversions when the specific formula is matched.
+%
+%  Examples:
+%  ==
+%  units:quantity_formula(isq:thermodynamic_efficiency,(isq:work)/(isq:heat)).
+%  ==
+%
+%  @param QuantityName The name of the derived quantity (e.g., `isq:thermodynamic_efficiency`).
+%  @param Formula An expression representing how `QuantityName` is derived from other quantities
+%                 (e.g., `isq:work/isq:heat`).
 :- multifile quantity_formula/2.
+
+%% quantity_parent(?ChildQuantity, ?ParentOrDimension) is nondet.
+%
+%  Defines a hierarchical relationship where `ChildQuantity` is a specialization of `ParentOrDimension`.
+%  This predicate is multifile, allowing users and other modules to extend the quantity hierarchy.
+%
+%  Examples:
+%  ==
+%  units:quantity_parent(isq:length, isq:dim_length).         % isq:length is a base quantity with dimension isq:dim_length.
+%  units:quantity_parent(isq:width, isq:length).              % isq:width is a kind of isq:length.
+%  units:quantity_parent(isq:speed, isq:dim_length/isq:dim_time). % isq:speed's dimension is length/time.
+%  ==
+%
+%  @param ChildQuantity The name of the child quantity (e.g., `isq:width`).
+%  @param ParentOrDimension The name of the parent quantity (e.g., `isq:length`),
+%                           a dimension name (e.g., `isq:dim_length`),
+%                           or a derived quantity (e.g., `isq:length/isq:time`).
 :- multifile quantity_parent/2.
 
+%% absolute_point_origin(?OriginName, ?QuantityType) is nondet.
+%
+%  Declares an `OriginName` as an absolute reference point for a given `QuantityType`.
+%  This predicate is multifile, allowing users and other modules to define new absolute origins.
+%
+%  Absolute origins serve as fundamental datums from which quantity points can be measured.
+%  Unlike relative origins, they are not defined in terms of other origins.
+%  The `QuantityType` specifies the kind of quantity for which this origin is a reference.
+%  For example, `si:absolute_zero` is an absolute origin for `isq:thermodynamic_temperature`.
+%  The special origin `0` is predefined as an absolute origin for any `QuantityType`
+%  serving as the default origin for quantities that do not have a specific named origin.
+%
+%  Examples:
+%  ==
+%  units:absolute_point_origin(si:absolute_zero, isq:thermodynamic_temperature). % Absolute zero temperature.
+%  units:absolute_point_origin(my_custom_epoch, isq:time).                      % A custom absolute time reference.
+%  ==
+%
+%  @param OriginName The atom or compound term representing the name of the absolute origin.
+%  @param QuantityType The quantity type for which this origin is a reference (e.g., `isq:thermodynamic_temperature`).
 :- multifile absolute_point_origin/2.
+
+%% no_space_before_unit_symbol(?UnitName) is nondet.
+%
+%  Declares that the symbol associated with a specific `UnitName`
+%  should not be preceded by a space when a quantity is formatted (e.g., by `qformat/1`).
+%  This predicate is multifile, allowing users and other modules to specify
+%  formatting exceptions for unit symbols.
+%
+%  By default, `qformat/1` inserts a space between a numeric value and its
+%  unit symbol. This predicate provides an override for units whose symbols
+%  (like the degree symbol °) should directly follow the value.
+%
+%  Examples:
+%  ==
+%  units:no_space_before_unit_symbol(non_si:degree).
+%  units:no_space_before_unit_symbol(non_si:arcminute).
+%  units:no_space_before_unit_symbol(non_si:arcsecond).
+%  ==
+%
+%  @param UnitName The unit name (an atom or compound term, e.g., `non_si:degree`)
+%                  whose symbol should not have a preceding space.
 :- multifile no_space_before_unit_symbol/1.
+
+%% prefix(?PrefixName, ?Symbol, ?Factor) is nondet.
+%
+%  Defines a unit prefix, its symbol, and its numerical factor.
+%  This predicate is multifile, allowing users and other modules to define new prefixes.
+%
+%  Prefixes are used to denote multiples or submultiples of units.
+%  `PrefixName` is the full name of the prefix (e.g., `si:kilo`).
+%  `Symbol` is the character(s) used to represent the prefix (e.g., `'k'`).
+%  `Factor` is the numerical multiplier associated with the prefix (e.g., `1000`).
+%
+%  When a prefix is used with a unit (e.g., `si:kilo(si:metre)`), the library
+%  combines the prefix's symbol with the unit's symbol (e.g., "km") and
+%  applies the factor to the unit's value.
+%  Note that the library won't recognize the concatenated name of the prefix and unit,
+%  (e.g. `si:kilometre` for `si:kilo(si:metre)`.
+%  If you want that, you can add an alias `units:alias(si:kilometre, si:kilo(si:metre))`.
+%  The only predefined alias in the library is `si:kilogram` as it is a base SI unit.
+%
+%  Examples:
+%  ==
+%  units:prefix(si:kilo, 'k', 1000).
+%  units:prefix(si:milli, 'm', 1/1000).
+%  units:prefix(iec:kibi, 'Ki', 1024).
+%  ==
+%
+%  @param PrefixName The full name of the prefix, often namespaced (e.g., `si:kilo`, `iec:mebi`).
+%  @param Symbol The symbol for the prefix (e.g., `'k'`, `'M'`).
+%  @param Factor The numerical factor the prefix represents (e.g., `1000`, `1024*1024`).
 :- multifile prefix/3.
+
+%% relative_point_origin(?OriginName, ?Offset) is nondet.
+%
+%  Declares `OriginName` as a symbolic name for a quantity point defined by the `Offset` expression.
+%  The `Offset` expression itself evaluates to a specific point in a quantity's dimensional space.
+%  This predicate is multifile, allowing users and other modules to define new named quantity points.
+%
+%  This predicate establishes that `OriginName` is equivalent to the point denoted by `Offset`.
+%  The `Offset` expression should evaluate to a quantity point.
+%
+%  Examples:
+%  ==
+%  units:relative_point_origin(si:ice_point, point(273.15 * si:kelvin)).
+%  ==
+%
+%  @param OriginName The atom or compound term representing the symbolic name of the quantity point.
+%  @param Offset An expression that evaluates to a quantity point.
+%                Typically `point(Quantity)` or `ExistingOrigin + Quantity`.
+%                (e.g., `point(273.15*si:kelvin)` or `oa + 10*m`).
 :- multifile relative_point_origin/2.
+
+%% unit_kind(?UnitName, ?QuantityKind) is nondet.
+%
+%  Associates a `UnitName` with a specific `QuantityKind`.
+%  This predicate is multifile, allowing users and other modules to define these associations.
+%
+%  The `QuantityKind` argument should be a term that represents a kind of quantity,
+%  often defined using the `kind/1` predicate or being a base quantity.
+%
+%  Examples:
+%  ==
+%  units:unit_kind(si:metre, isq:length).                 % Metre is a unit for quantities of kind length.
+%  ==
+%
+%  @param UnitName The name of the unit (e.g., `si:radian`, `si:metre`).
+%  @param QuantityKind The specific kind of quantity this unit measures (e.g., `isq:angular_measure`, `isq:length`).
 :- multifile unit_kind/2.
+
+%% unit_origin(?UnitName, ?OriginName) is nondet.
+%
+%  Associates a `UnitName` with a specific `OriginName` to be used as its default
+%  reference point when creating quantity points.
+%  This predicate is multifile, allowing users and other modules to define these associations.
+%
+%  Certain units, particularly for quantities like temperature, imply a specific
+%  origin that is not the absolute zero of the quantity scale. For example,
+%  `si:degree_Celsius` measures temperature relative to the freezing point of water
+%  (`si:ice_point`), whereas `si:kelvin` measures from absolute zero (`si:absolute_zero`).
+%
+%  When a quantity point is constructed using the `point/1` functor with a unit
+%  that has an entry in `unit_origin/2`, the specified `OriginName` is used
+%  as the origin of the resulting quantity point. If a unit has no `unit_origin/2`
+%  entry, its default origin is `0`.
+%
+%  Examples:
+%  ==
+%  units:unit_origin(si:kelvin, si:absolute_zero). % Kelvin measures from absolute zero.
+%  units:unit_origin(si:degree_Celsius, si:ice_point). % Celsius measures from the ice point.
+%  % For `point(20 * si:degree_Celsius)`, the origin will be `si:ice_point`.
+%  % For `point(20 * si:metre)`, the origin will be `0` (as metre has no specific unit_origin).
+%  ==
+%
+%  @param UnitName The name of the unit (e.g., `si:degree_Celsius`).
+%  @param OriginName The name of the origin associated with this unit (e.g., `si:ice_point`).
+%                    This `OriginName` should be defined via `absolute_point_origin/2` or `relative_point_origin/2`.
 :- multifile unit_origin/2.
+
+%% unit_symbol(?UnitName, ?Symbol) is nondet.
+%
+%  Associates a base `UnitName` with its textual `Symbol`.
+%  This predicate is multifile, allowing users and other modules to define symbols for new base units.
+%
+%  This predicate is intended for base units not defined by a formula
+%  involving other units (which would use `unit_symbol_formula/3`). The `Symbol` is
+%  used for formatting quantities (e.g., by `qformat/1`) and can also be used for
+%  parsing input expressions.
+%
+%  The `UnitName` is the canonical, often namespaced, name of the unit.
+%  The `Symbol` is an atom representing its common textual representation.
+%
+%  Examples:
+%  ==
+%  units:unit_symbol(si:metre, m).         % Metre symbol is 'm'.
+%  units:unit_symbol(si:gram, g).          % Gram symbol is 'g'.
+%  units:unit_symbol(currency:euro, '€').  % Custom Euro symbol.
+%  ==
+%
+%  Note: For derived units (e.g., `si:newton`) or units defined as scaled versions of
+%  others (e.g., `non_si:hour`), use `unit_symbol_formula/3` instead.
+%
+%  @param UnitName The canonical name of the base unit (e.g., `si:metre`, `isq:ampere`).
+%  @param Symbol The textual symbol for the unit (e.g., `m`, `'A'`).
 :- multifile unit_symbol/2.
+
+%% unit_symbol_formula(?UnitName, ?Symbol, ?Formula) is nondet.
+%
+%  Defines a derived `UnitName`, its textual `Symbol`, and its defining `Formula`
+%  in terms of other units.
+%  This predicate is multifile, allowing users and other modules to define new derived units.
+%
+%  This is the primary way to introduce units that are not base units (which use `unit_symbol/2`).
+%  The `Formula` expresses `UnitName` as a combination of other existing units
+%  (base, prefixed, or other derived units) and arithmetic operators (`*`, `/`, `**`).
+%  The `Symbol` is used for formatting quantities with this unit.
+%
+%  Examples:
+%  ==
+%  units:unit_symbol_formula(si:newton, 'N', si:kilogram * si:metre / si:second**2). % Newton (force)
+%  units:unit_symbol_formula(si:hertz, 'Hz', 1 / si:second).                       % Hertz (frequency)
+%  units:unit_symbol_formula(non_si:hour, h, 60 * non_si:minute).                  % Hour (time)
+%  units:unit_symbol_formula(si:degree_Celsius, '℃', si:kelvin).                   % Degree Celsius (temperature, same scale as Kelvin but different origin)
+%  ==
+%
+%  Note: For base units that are not derived from others, use `unit_symbol/2`.
+%
+%  @param UnitName The canonical name of the derived unit (e.g., `si:newton`, `non_si:hour`).
+%  @param Symbol The textual symbol for the unit (e.g., `'N'`, `'h'`, `'℃'`).
+%  @param Formula An expression defining the unit in terms of other units
+%                 (e.g., `si:kilogram*si:metre/si:second**2`).
 :- multifile unit_symbol_formula/3.
 
 units:absolute_point_origin(0, _).
@@ -836,6 +1106,69 @@ normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
 normalize_kind(E, R) =>
    normalize(E, R).
 
+%% qeval(+Expr) is det.
+%
+%  Evaluates an arithmetic expression `Expr` involving quantities, units, and quantity points.
+%  This is the primary predicate for performing calculations and comparisons within the units library.
+%  It handles all supported operators, conversions, and ensures dimensional consistency.
+%
+%  `Expr` can be:
+%  * An assignment: `Result is SubExpr`.
+%    - If `Result` is a variable, it is bound to the quantity or quantity point resulting from `SubExpr`.
+%    - Example: `qeval(X is 3*si:metre + 50*si:centimetre)`
+%  * A comparison: `A Op B` where `Op` is one of `=:=`, `=\=`, `<`, `=<`, `>`, `>=`.
+%    - Both `A` and `B` are evaluated, and the comparison is performed.
+%    - Requires `A` and `B` to have compatible quantity types and units.
+%    - Example: `qeval(1*si:kilometre =:= 1000*si:metre)`
+%  * A CLP(BNR) constraint: `{SubExpr}`.
+%    - `SubExpr` is evaluated using CLP(BNR) arithmetic.
+%    - Example: `qeval({X*si:metre =:= 10*si:foot})`
+%  * A sequence of expressions: `(Expr1, Expr2, ...)`.
+%
+%  Supported sub-expressions within `Expr`:
+%  * Basic arithmetic: `+A`, `-A`, `A+B`, `A-B`, `A*B`, `A/B`, `A**N` (or `A^N`).
+%    - Operations respect quantity types and units.
+%    - Addition/subtraction require compatible kinds.
+%  * Conversions:
+%    - `QExpr in UnitExpr`: Converts quantity `QExpr` to `UnitExpr`.
+%      Example: `qeval(X is 1*si:foot in si:inch)`
+%    - `QExpr as QuantityTypeExpr`: Casts quantity `QExpr` to `QuantityTypeExpr`.
+%      Example: `qeval(X is 10*si:metre/si:second as isq:speed)`
+%  * Quantity point operations:
+%    - `point(QExpr)`: Creates a quantity point from quantity `QExpr`.
+%      Origin is inferred from unit or defaults to `0`.
+%      Example: `qeval(P is point(20*si:degree_Celsius))`
+%    - `origin(OriginName)`: Refers to a defined origin.
+%      Example: `qeval(P is si:ice_point + 5*si:kelvin)`
+%    - `quantity_from_zero(PExpr)`: Vector from origin `0` to point `PExpr`.
+%    - `quantity_from(PExpr, OriginExpr)`: Vector from `OriginExpr` to `PExpr`.
+%    - `point_for(PExpr, NewOriginExpr)`: Represents point `PExpr` relative to `NewOriginExpr`.
+%  * Disambiguation functors:
+%    - `unit(U)`: Interprets `U` as a unit (e.g., `si:metre`).
+%    - `quantity(Q)`: Interprets `Q` as a quantity (e.g., `V*Q[U]`).
+%    - `quantity_point(QP)`: Interprets `QP` as a quantity point.
+%  * Numeric values (e.g., `3`, `pi`, `random_float`) are treated as dimensionless quantities with unit `1`.
+%  * Variables:
+%    - On the left of `is`, bound to the result.
+%    - Elsewhere, typically treated as CLP(BNR) variables of dimensionless quantity.
+%
+%  Quantities are represented as `Value * QuantityType[Unit]`.
+%  Quantity points are represented as `Origin + Quantity`.
+%
+%  Examples:
+%  ==
+%  ?- qeval(Dist is 10 * si:kilo(si:metre) + 500 * si:metre).
+%  Dist = 10500 * kind_of(isq:length)[si:metre].
+%
+%  ?- qeval(TempPoint is point(25 * si:degree_Celsius)).
+%  TempPoint = si:zeroth_degree_Celsius+25*kind_of(isq:thermodynamic_temperature)[si:degree_Celsius].
+%
+%  ?- qeval(({Len_m * si:metre =:= Len_ft * foot}, Len_m =:= 1)).
+%  Len_m = 1,
+%  Len_ft = 1250r381.
+%  ==
+%
+%  @param Expr The arithmetic expression to evaluate.
 qeval((A, B)) =>
    qeval(A),
    qeval(B).

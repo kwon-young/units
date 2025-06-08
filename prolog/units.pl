@@ -32,8 +32,8 @@
    unit_symbol/2,
    unit_symbol_formula/3
 ]).
-:- reexport([units/q]).
-:- reexport([units/qp]).
+% :- reexport([units/q]).
+% :- reexport([units/qp]).
 
 :- use_module(library(dcg/high_order)).
 :- use_module(library(clpBNR)).
@@ -1640,7 +1640,7 @@ test('temperature') :-
    true.
 
 test('radian', [error(_)]) :-
-   qeval(_ is m/m in radian).
+   qeval(_ is m/m in angular:radian).
 
 test('qformat', [
    forall(qformat_data(Expr, ExpectedString))

@@ -378,3 +378,27 @@ Here's a breakdown of the key predicates you'll use:
     ```
 
 By defining these predicates, your custom units and quantities will be integrated into the system, allowing them to be used with `qeval/1` and other library features.
+
+## Changelog
+
+### Version 0.15.0 (2025-06-08)
+- **Features & Enhancements:**
+  - Added a script to generate a hierarchical graph of quantities (`quantities.pdf`) (`9b475d9`, `5637d2c`).
+  - Improved integration with `must_be/2` for type checking of quantities (`63e2992`, `7e5920e`, `9f61765`).
+  - Enhanced flexibility by allowing variables for units and quantities in `common_expr/6` (`eec9baf`).
+- **Fixes:**
+  - Corrected `qformat/1` behavior and added its documentation (`ff92a11`, `b4e0f0c`).
+  - Addressed a case where non-ground quantities were not handled correctly in `eval_/2` (`e17bbda`).
+  - Resolved duplicate predicate exports and test names (`30e95f0`).
+  - Adjusted the `radian` unit test to correctly expect an error (`e999fdc`).
+- **Documentation:**
+  - Added comprehensive PlDoc for all exported predicates in `prolog/units.pl` (`c109549`).
+  - Documented core evaluation and formatting predicates `qeval/1` and `qformat/1` (`b4e0f0c`).
+  - Significantly improved `README.md` with detailed explanations of quantity types, quantity points, `qeval/1` usage, `clpBNR` support, and how to add custom units/quantities (`b49f10e`, `6e36431`, `abf82ee`, `b0bd0e7`).
+  - Added lists of predefined quantities (`Quantities.md`) and units (`Units.md`) (`c97724d`).
+  - Documented library dependencies (`cfb6a36`).
+- **Refactoring & Internal Changes:**
+  - Rewrote the internal parsing mechanism for expressions (`01e853b`).
+  - Refactored `inverse/2` predicate location (`18b34f3`).
+  - Internal cleanups and improved usage of `alias_quantity_/1` (`496a997`, `2e9c42d`).
+

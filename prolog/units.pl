@@ -116,12 +116,6 @@ parse(_, dim_1) ==>
 parse(Coeff, A) ==>
    [A-Coeff].
 
-inverse([]) --> [].
-inverse([A-N | L]) -->
-   { N1 is -N },
-   [A-N1],
-   inverse(L).
-
 aggregate(L, L2) :-
    group_pairs_by_key(L, Groups),
    maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L1),
@@ -165,6 +159,12 @@ is_num(_-N) :- N > 0.
 
 power(A-1, A) :- !.
 power(A-N, A**N).
+
+inverse([]) --> [].
+inverse([A-N | L]) -->
+   { N1 is -N },
+   [A-N1],
+   inverse(L).
 
 generate_expression(In, Out) :-
    partition(is_num, In, Num, Denom),

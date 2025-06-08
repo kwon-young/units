@@ -1639,7 +1639,7 @@ test('temperature') :-
    qeval(_ is point(20.5 * degree_Celsius)),
    true.
 
-test('radian') :-
+test('radian', [error(_)]) :-
    qeval(_ is m/m in radian).
 
 test('qformat', [

@@ -133,6 +133,13 @@ normalize_factors(L, L2) :-
    msort(L, L1),
    aggregate(L1, L2).
 
+%% parse_normalize_factors(+Expression, -NormalizedFactorList) is det.
+%
+%  Combines parsing and factor normalization.
+%  Convenience predicate equivalent to calling parse/2 followed by normalize_factors/2.
+%
+%  @param Expression The input expression to parse and normalize.
+%  @param NormalizedFactorList The canonical list of `Term-Exponent` pairs.
 parse_normalize_factors(In, L3) :-
    parse(In, L),
    normalize_factors(L, L3).

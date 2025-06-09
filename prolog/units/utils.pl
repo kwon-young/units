@@ -65,8 +65,6 @@ normalize(In, Out) :-
 %  dimensionless quantities, used by predicates like quantity_dimensions/2.
 %  For other expressions, its behavior is identical to normalize/2.
 %
-%  See normalize/2 for general normalization details.
-%
 %  Examples:
 %  ==
 %  ?- normalize_dimension(metre/metre, Dim).

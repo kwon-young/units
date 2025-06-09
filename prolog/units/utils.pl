@@ -15,7 +15,7 @@
 %  Converts an arithmetic `Expression` involving multiplication (`*`),
 %  division (`/`), and exponentiation (`**`) into a canonical, simplified form.
 %  This predicate is crucial for ensuring that semantically equivalent expressions
-%  (e.g., `metre/second*second` and `metre`) are represented identically.
+%  (e.g., `metre*second/second` and `metre`) are represented identically.
 %  This facilitates reliable comparison and manipulation of units, quantities,
 %  and numerical factors.
 %
@@ -27,12 +27,6 @@
 %  Edge Cases:
 %  * If all terms in the expression cancel out (e.g., `metre/metre`),
 %    `NormalizedExpression` will be the atom `1`.
-%  * If the input `Expression` is already normalized,
-%    it will be returned unchanged (up to sorting).
-%  * The predicate correctly handles complex cancellations and combinations of terms.
-%
-%  This predicate is fundamental for consistent processing of dimensional
-%  expressions throughout the library.
 %
 %  Examples:
 %  ==

@@ -67,9 +67,6 @@ normalize(In, Out) :-
 %  used, for example, by quantity_dimensions/2 in `prolog/units.pl`.
 %  For all other expressions, its behavior is identical to normalize/2.
 %
-%  Refer to the documentation of normalize/2 for more details on the
-%  general normalization process, examples, and other edge cases.
-%
 %  Examples:
 %  ==
 %  ?- normalize_dimension(metre/metre, Dim).

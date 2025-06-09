@@ -67,11 +67,11 @@ normalize(In, Out) :-
 %
 %  Examples:
 %  ==
-%  ?- normalize_dimension(metre/metre, Dim).
+%  ?- normalize_dimension(isq:dim_length/isq:dim_length, Dim).
 %  Dim = dim_1.
 %
-%  ?- normalize_dimension(metre*second/second, Dim).
-%  Dim = metre.
+%  ?- normalize_dimension(isq:dim_length*isq:dim_time/isq:dim_time, Dim).
+%  Dim = isq:dim_length.
 %  ==
 %
 %  @param Expression The input dimension expression.

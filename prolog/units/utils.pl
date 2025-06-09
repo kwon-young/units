@@ -57,6 +57,31 @@ normalize(In, Out) :-
    normalize_factors(L, L1),
    generate_expression(L1, Out).
 
+%% normalize_dimension(+Expression, -NormalizedDimension) is det.
+%
+%  Normalizes an `Expression` representing a quantity dimension.
+%  This predicate functions like normalize/2, with one key difference.
+%  If the `Expression` normalizes to the value `1` (representing a dimensionless quantity),
+%  this predicate will output the atom `dim_1` as the `NormalizedDimension`.
+%  This provides a canonical atom for dimensionless dimensions,
+%  used, for example, by quantity_dimensions/2 in `prolog/units.pl`.
+%  For all other expressions, its behavior is identical to normalize/2.
+%
+%  Refer to the documentation of normalize/2 for more details on the
+%  general normalization process, examples, and other edge cases.
+%
+%  Examples:
+%  ==
+%  ?- normalize_dimension(metre/metre, Dim).
+%  Dim = dim_1.
+%
+%  ?- normalize_dimension(metre*second/second, Dim).
+%  Dim = metre.
+%  ==
+%
+%  @param Expression The input dimension expression to normalize.
+%  @param NormalizedDimension The canonical, simplified form of `Expression`,
+%                             with `1` replaced by `dim_1`.
 normalize_dimension(In, Out) :-
    normalize(In, N),
    (  N == 1

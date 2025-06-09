@@ -98,6 +98,37 @@ parse(_, dim_1) ==>
 parse(Coeff, A) ==>
    [A-Coeff].
 
+%% normalize_factors(+FactorList, -NormalizedFactorList) is det.
+%
+%  Takes a list of `Term-Exponent` pairs (`FactorList`) and converts it
+%  into a canonical, simplified form (`NormalizedFactorList`).
+%  This is a key internal step in the normalization process.
+%
+%  The process involves:
+%  1. Sorting the `FactorList`. `msort/2` is used, which sorts based on
+%     the standard order of terms (the `Term` part of the pair first).
+%  2. Aggregating factors: Identical `Term`s are combined by summing their
+%     `Exponent`s. For example, `[metre-1, metre-1]` becomes `[metre-2]`.
+%  3. Simplification:
+%     - Terms with an exponent of `0` are removed (e.g., `[second-0]` is removed).
+%     - Terms that are the atom `1` (e.g., `[1-3]`) are removed, as they
+%       represent dimensionless numerical factors that are handled elsewhere or
+%       become part of the overall numerical coefficient of an expression.
+%
+%  Example:
+%  ==
+%  ?- normalize_factors([metre-1, second-1, metre-1, second- -1, foo-0, 1-3], Norm).
+%  Norm = [metre-2].
+%
+%  ?- normalize_factors([a-1, b-2, a- -1], Norm).
+%  Norm = [b-2].
+%  ==
+%
+%  @param FactorList A list of pairs, where each pair is `Term-Exponent`.
+%                    `Term` is typically an atom (like a unit or quantity name)
+%                    and `Exponent` is a number.
+%  @param NormalizedFactorList The processed list of `Term-Exponent` pairs,
+%                              sorted, aggregated, and simplified.
 normalize_factors(L, L2) :-
    msort(L, L1),
    aggregate(L1, L2).

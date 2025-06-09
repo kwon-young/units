@@ -240,4 +240,11 @@ test(normalize_examples, [forall(normalize_test_data(Input, ExpectedOutput))]) :
     normalize(Input, Output),
     assertion(Output == ExpectedOutput).
 
+normalize_factors_test_data([metre-1, second-1, metre-1, second- -1, foo-0, 1-3], [metre-2]).
+normalize_factors_test_data([a-1, b-2, a- -1], [b-2]).
+
+test(normalize_factors_examples, [forall(normalize_factors_test_data(Input, ExpectedOutput))]) :-
+    normalize_factors(Input, Output),
+    assertion(Output == ExpectedOutput).
+
 :- end_tests(utils).

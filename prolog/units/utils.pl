@@ -13,24 +13,23 @@
 %% normalize(+Expression, -NormalizedExpression) is det.
 %
 %  Converts an arithmetic `Expression` involving multiplication (`*`),
-%  division (`/`), and exponentiation (`**`) into a canonical,
-%  simplified form. This predicate is crucial for ensuring that
-%  semantically equivalent expressions (e.g., `metre/second*second` and
-%  `metre`) are represented identically, facilitating reliable comparison
-%  and manipulation of units, quantities, and numerical factors.
+%  division (`/`), and exponentiation (`**`) into a canonical, simplified form.
+%  This predicate is crucial for ensuring that semantically equivalent expressions
+%  (e.g., `metre/second*second` and `metre`) are represented identically.
+%  This facilitates reliable comparison and manipulation of units, quantities,
+%  and numerical factors.
 %
 %  The `NormalizedExpression` will have its terms sorted alphabetically.
-%  Terms in the numerator appear with positive exponents (or no exponent if
-%  the exponent is 1). Terms in the denominator are represented with
-%  positive exponents after the `/` operator.
+%  Terms in the numerator appear with positive exponents.
+%  If the exponent is 1, no exponent is shown.
+%  Terms in the denominator are represented with positive exponents after the `/` operator.
 %
 %  Edge Cases:
 %  * If all terms in the expression cancel out (e.g., `metre/metre`),
 %    `NormalizedExpression` will be the atom `1`.
-%  * If the input `Expression` is already normalized, it will be returned
-%    unchanged (up to sorting).
-%  * The predicate correctly handles complex cancellations and combinations
-%    of terms.
+%  * If the input `Expression` is already normalized,
+%    it will be returned unchanged (up to sorting).
+%  * The predicate correctly handles complex cancellations and combinations of terms.
 %
 %  This predicate is fundamental for consistent processing of dimensional
 %  expressions throughout the library.

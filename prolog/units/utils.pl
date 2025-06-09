@@ -169,9 +169,8 @@ simplify([H | T], R) =>
 %     and denominator terms (negative exponents).
 %  2. Converting each term to its power form (e.g., `Term-1` becomes `Term`,
 %     `Term-N` becomes `Term**N`). Denominator exponents are made positive.
-%  3. Joining numerator terms with `*`.
-%  4. Joining denominator terms with `*`.
-%  5. Forming the final `Expression`:
+%  3. Joining terms with `*`.
+%  4. Forming the final `Expression`:
 %     - If only numerator terms: `Num1*Num2*...`
 %     - If only denominator terms: `1/(Den1*Den2*...)`
 %     - If both: `(Num1*Num2*...)/(Den1*Den2*...)`

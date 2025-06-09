@@ -158,6 +158,46 @@ simplify([H | T], R) =>
    R = [H | L],
    simplify(T, L).
 
+%% generate_expression(+FactorList, -Expression) is det.
+%
+%  Converts a `FactorList` of `Term-Exponent` pairs into a standard
+%  Prolog arithmetic `Expression`. This is the inverse operation of
+%  parse/2 combined with normalize_factors/2.
+%
+%  The process involves:
+%  1. Partitioning the `FactorList` into numerator terms (positive exponents)
+%     and denominator terms (negative exponents).
+%  2. Converting each term to its power form (e.g., `Term-1` becomes `Term`,
+%     `Term-N` becomes `Term**N`). Denominator exponents are made positive.
+%  3. Joining numerator terms with `*`.
+%  4. Joining denominator terms with `*`.
+%  5. Forming the final `Expression`:
+%     - If only numerator terms: `Num1*Num2*...`
+%     - If only denominator terms: `1/(Den1*Den2*...)`
+%     - If both: `(Num1*Num2*...)/(Den1*Den2*...)`
+%     - If `FactorList` is empty (e.g., after all terms cancel): `1`.
+%
+%  Examples:
+%  ==
+%  ?- generate_expression([metre-1, second- -2], Expr).
+%  Expr = metre/second**2.
+%
+%  ?- generate_expression([kilogram-1, metre-1, second- -2], Expr).
+%  Expr = kilogram*metre/second**2.
+%
+%  ?- generate_expression([joule-1], Expr).
+%  Expr = joule.
+%
+%  ?- generate_expression([], Expr).
+%  Expr = 1.
+%
+%  ?- generate_expression([second- -1], Expr).
+%  Expr = 1/second.
+%  ==
+%
+%  @param FactorList A list of `Term-Exponent` pairs, typically sorted and
+%                    simplified by normalize_factors/2.
+%  @param Expression The resulting Prolog arithmetic expression.
 generate_expression(In, Out) :-
    partition(is_num, In, Num, Denom),
    maplist(power, Num, Num1),

@@ -293,4 +293,14 @@ test(normalize_factors_examples, [forall(normalize_factors_test_data(Input, Expe
     normalize_factors(Input, Output),
     assertion(Output == ExpectedOutput).
 
+generate_expression_test_data([metre-1, second- -2], metre/second**2).
+generate_expression_test_data([kilogram-1, metre-1, second- -2], kilogram*metre/second**2).
+generate_expression_test_data([joule-1], joule).
+generate_expression_test_data([], 1).
+generate_expression_test_data([second- -1], 1/second).
+
+test(generate_expression_examples, [forall(generate_expression_test_data(Input, ExpectedOutput))]) :-
+    generate_expression(Input, Output),
+    assertion(Output == ExpectedOutput).
+
 :- end_tests(utils).

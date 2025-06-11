@@ -229,6 +229,18 @@ multiply([H | T], Expr) :-
 
 :- meta_predicate mapexpr1(1, 1, ?).
 
+%% mapexpr1(+Goal, +Failure, +InputExpression) is semidet.
+%
+%  Recursively traverses an arithmetic `InputExpression` (supporting `*`, `/`, `**` operators)
+%  and applies a check `Goal` to its atomic components.
+%  `Goal(Component)` is called for each atomic component.
+%  If `Goal(Component)` fails, then `Failure(Component)` is called instead for that component.
+%  The predicate succeeds if all such calls to `Goal` (or `Failure` respectively) succeed.
+%  It does not transform the expression. The exponent in `A**_` is not processed by `Goal` or `Failure`.
+%
+%  @param Goal A callable predicate/lambda to check components. Called as `call(Goal, Component)`.
+%  @param Failure A callable predicate/lambda if `Goal` fails for a component. Called as `call(Failure, Component)`.
+%  @param InputExpression The arithmetic expression whose components are to be checked.
 mapexpr1(Goal, F, A*B) =>
    mapexpr1(Goal, F, A),
    mapexpr1(Goal, F, B).

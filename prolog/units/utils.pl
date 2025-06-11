@@ -257,7 +257,6 @@ mapexpr(Goal, A, R) :-
 %  `Goal(OriginalComponent, TransformedComponent)` is called for each atomic component.
 %  If `Goal` fails, `Failure(OriginalComponent, TransformedComponent)` is called.
 %  The predicate reconstructs the expression with the transformed components.
-%  The exponent in `A**N` is not transformed.
 %
 %  @param Goal A callable predicate/lambda to transform components.
 %  @param Failure A callable predicate/lambda if `Goal` fails.

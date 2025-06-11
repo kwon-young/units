@@ -4,7 +4,6 @@
    normalize_factors/2,
    parse_normalize_factors/2,
    generate_expression/2,
-   mapexpr/2,
    mapexpr1/3,
    mapexpr/3,
    mapexpr/4
@@ -227,11 +226,6 @@ denom([H | T], Num, Num/Expr) :-
 
 multiply([H | T], Expr) :-
    foldl([B, A, A*B]>>true, T, H, Expr).
-
-:- meta_predicate mapexpr(1, ?).
-
-mapexpr(Goal, A) :-
-   mapexpr1(Goal, [_]>>true, A).
 
 :- meta_predicate mapexpr1(1, 1, ?).
 

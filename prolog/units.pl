@@ -435,10 +435,12 @@ qformat(VFormat, M) :-
 %  @param Term The term to check.
 error:has_type(quantity, Term) :-
    !,
-   is_quantity(Term, _).
+   catch(eval_(Term, R), _, fail),
+   is_dict(R, q).
 error:has_type(quantity_point, Term) :-
    !,
-   is_quantity_point(Term, _).
+   catch(eval_(Term, R), _, fail),
+   is_dict(R, qp).
 error:has_type(Quantity, Term) :-
    ground(Quantity),
    alias_derived_quantity(Quantity),

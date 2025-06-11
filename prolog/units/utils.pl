@@ -236,7 +236,6 @@ multiply([H | T], Expr) :-
 %  `Goal(Component)` is called for each atomic component.
 %  If `Goal(Component)` fails, then `Failure(Component)` is called instead for that component.
 %  The predicate succeeds if all such calls to `Goal` (or `Failure` respectively) succeed.
-%  It does not transform the expression. The exponent in `A**_` is not processed by `Goal` or `Failure`.
 %
 %  @param Goal A callable predicate/lambda to check components. Called as `call(Goal, Component)`.
 %  @param Failure A callable predicate/lambda if `Goal` fails for a component. Called as `call(Failure, Component)`.

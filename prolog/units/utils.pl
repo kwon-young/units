@@ -250,6 +250,19 @@ mapexpr(Goal, A, R) :-
 
 :- meta_predicate mapexpr(2, 2, ?, ?).
 
+%% mapexpr(+Goal, +Failure, +InputExpression, -OutputExpression) is det.
+%
+%  Recursively traverses an arithmetic `InputExpression` (supporting `*`, `/`, `**` operators)
+%  and applies a transformation to its atomic components.
+%  `Goal(OriginalComponent, TransformedComponent)` is called for each atomic component.
+%  If `Goal` fails, `Failure(OriginalComponent, TransformedComponent)` is called.
+%  The predicate reconstructs the expression with the transformed components.
+%  The exponent in `A**N` is not transformed.
+%
+%  @param Goal A callable predicate/lambda to transform components.
+%  @param Failure A callable predicate/lambda if `Goal` fails.
+%  @param InputExpression The arithmetic expression to transform.
+%  @param OutputExpression The resulting transformed expression.
 mapexpr(Goal, F, A*B, R) =>
    mapexpr(Goal, F, A, A1),
    mapexpr(Goal, F, B, B1),

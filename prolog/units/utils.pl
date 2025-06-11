@@ -245,6 +245,12 @@ mapexpr1(Goal, Failure, A) =>
 
 :- meta_predicate mapexpr(2, ?, ?).
 
+%% mapexpr(+Goal, +InputExpression, -OutputExpression) is det.
+%
+%  Same as mapexpr/4, but uses `=/2` as the `Failure` goal.
+%  This means if `Goal` fails for a component, the component is kept unchanged.
+%
+%  @see mapexpr/4 for detailed behavior.
 mapexpr(Goal, A, R) :-
    mapexpr(Goal, =, A, R).
 

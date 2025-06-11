@@ -404,6 +404,35 @@ qformat(VFormat, M) :-
    string_concat(VFormat, "~s~w", Format),
    format(Format, [V, Space, Symbol]).
 
+%% error:has_type(+Type, @Term) is semidet.
+%
+%  Hook for library(error)'s must_be/2 predicate to validate quantity-related types.
+%
+%  This predicate defines type checking for:
+%  * `quantity`: Succeeds if `Term` is a quantity (e.g., `Value*QuantityType[Unit]`).
+%  * `quantity_point`: Succeeds if `Term` is a quantity point (e.g., `Origin+Quantity`).
+%  * Specific quantity types (e.g., `isq:length`, `isq:speed`, `kind_of(isq:energy)`):
+%    Succeeds if `Term` can be evaluated by qeval/1 and the resulting quantity
+%    is implicitly convertible to the specified `Type`.
+%
+%  Examples:
+%  ==
+%  ?- qeval(X is 10*si:metre), must_be(quantity, X).
+%  X = 10*kind_of(isq:length)[si:metre].
+%
+%  ?- qeval(X is 10*si:metre), must_be(isq:length, X).
+%  X = 10*kind_of(isq:length)[si:metre].
+%
+%  ?- qeval(P is point(20*si:degree_Celsius)), must_be(quantity_point, P).
+%  P = si:ice_point+20*kind_of(isq:thermodynamic_temperature)[si:degree_Celsius].
+%
+%  ?- qeval(X is 10*si:metre), must_be(isq:time, X). % Fails
+%  ERROR: Type error: `isq:time' expected, found `10*kind_of(isq:length)[si:metre]'
+%  ==
+%
+%  @param Type The expected type. Can be `quantity`, `quantity_point`, or a
+%              specific quantity type atom/compound term recognized by `alias_derived_quantity/1`.
+%  @param Term The term to check.
 error:has_type(quantity, Term) :-
    !,
    is_quantity(Term, _).

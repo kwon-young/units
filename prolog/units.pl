@@ -1572,4 +1572,15 @@ qformat_data(1.5 * si:kilo(si:hertz), "1.5 kHz").
 qformat_data(10, "10"). % Dimensionless with unit 1
 qformat_data(10 * (si:metre/si:second), "10 m/s").
 
+test(has_type_examples) :-
+   qeval(X_len is 10*si:metre),
+   must_be(quantity, X_len),
+   must_be(isq:length, X_len),
+   qeval(P_temp is point(20*si:degree_Celsius)),
+   must_be(quantity_point, P_temp).
+
+test(has_type_fail_example, [error(type_error(isq:time, _))]) :-
+   qeval(X_len is 10*si:metre),
+   must_be(isq:time, X_len).
+
 :- end_tests(units).

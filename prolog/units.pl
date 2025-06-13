@@ -431,7 +431,7 @@ qformat(VFormat, M) :-
 %  ==
 %
 %  @param Type The expected type. Can be `quantity`, `quantity_point`, or a
-%              specific quantity type atom/compound term recognized by `alias_derived_quantity/1`.
+%              specific quantity type atom/compound term recognized by `any_quantity/1`.
 %  @param Term The term to check.
 error:has_type(quantity, Term) :-
    !,
@@ -443,7 +443,7 @@ error:has_type(quantity_point, Term) :-
    is_dict(R, qp).
 error:has_type(Quantity, Term) :-
    ground(Quantity),
-   alias_derived_quantity(Quantity),
+   any_quantity(Quantity),
    !,
    catch(eval_(Term, R), _, fail),
    (  is_dict(R, q)
@@ -479,7 +479,7 @@ iterative_deepening(Limit, Goal) :-
 is_of(unit, U-_) :-
    unit(U, _).
 is_of(quantity, Q-_) :-
-   alias_quantity_(Q).
+   alias_quantity(Q).
 
 :- meta_predicate partition_soft(1,+,-,-).
 
@@ -532,80 +532,86 @@ expand_factor(Type, Unit-N, Factors) :-
    ),
    parse_normalize_factors(Formula**N, Factors).
 
-:- table alias_quantity_parent/2.
+:- table aliased/2.
+:- meta_predicate aliased(1, ?).
 
-alias_quantity_parent(Quantity, Parent) :-
-   quantity_parent(Quantity, Parent),
-   \+ dimension_symbol(Parent, _).
-alias_quantity_parent(Alias, Parent) :-
-   alias(Alias, Quantity),
-   alias_quantity_parent(Quantity, Parent).
+aliased(Goal, A) :-
+   call(Goal, A).
+aliased(Goal, A) :-
+   alias(A, B),
+   aliased(Goal, B).
 
-:- table alias_quantity_/1.
+:- table aliased/3.
+:- meta_predicate aliased(2, ?, ?).
 
-alias_quantity_(Quantity) :-
-   alias_base_quantity(Quantity).
-alias_quantity_(Quantity) :-
-   alias_quantity_parent(Quantity, _).
+aliased(Goal, A, B) :-
+   call(Goal, A, B).
+aliased(Goal, Alias, B) :-
+   alias(Alias, A),
+   aliased(Goal, A, B).
 
-alias_quantity(Quantity), \+ ground(Quantity) =>
-   when(ground(Quantity), alias_quantity(Quantity)).
-alias_quantity(Quantity) =>
-   alias_quantity_(Quantity).
+:- meta_predicate lazy(0, ?).
 
-alias_derived_quantity(Quantity), \+ ground(Quantity) =>
-   when(ground(Quantity), alias_derived_quantity(Quantity)).
-alias_derived_quantity(kind_of(Kind)) =>
-   derived_root_kind(Kind).
-alias_derived_quantity(Quantity) =>
-   mapexpr1(alias_quantity, [_]>>fail, Quantity).
-
-alias_parent(Alias, Parent) :-
-   alias(Alias, Quantity),
-   (  alias_quantity_parent(Quantity, Parent)
-   ;  base_quantity(Quantity), Parent = Quantity
-   ).
-
-:- table alias_or_quantity_parent/2.
-
-alias_or_quantity_parent(Quantity, Parent) :-
-   quantity_parent(Quantity, Parent),
-   \+ dimension_symbol(Parent, _).
-alias_or_quantity_parent(Alias, Quantity) :-
-   alias(Alias, Quantity),
-   alias_quantity(Quantity).
-
-:- table alias_quantity_formula/2.
-
-alias_quantity_formula(Quantity, Formula) :-
-   quantity_formula(Quantity, Formula).
-alias_quantity_formula(Alias, Formula) :-
-   alias(Alias, Quantity),
-   alias_quantity_formula(Quantity, Formula).
-
-derived_quantity(_*_).
-derived_quantity(_/_).
-derived_quantity(_**_).
+lazy(Goal, Cond), \+ ground(Cond) =>
+   when(ground(Cond), Goal).
+lazy(Goal, _) =>
+   call(Goal).
 
 base_quantity(Quantity) :-
    quantity_parent(Quantity, Dimension),
    dimension_symbol(Dimension, _).
 
-:- table alias_base_quantity/1.
+child_quantity_parent(Child, Parent) :-
+   quantity_parent(Child, Parent),
+   \+ dimension_symbol(Parent, _).
 
-alias_base_quantity(Quantity) :-
-   base_quantity(Quantity).
-alias_base_quantity(Alias) :-
-   alias(Alias, Quantity),
-   alias_base_quantity(Quantity).
+alias_quantity(Quantity) :-
+   aliased(units:quantity_parent, Quantity, _).
 
-:- table root/1.
+% derived quantity, with alias, lazy
+any_quantity(Quantity) :-
+   lazy(any_quantity_(Quantity), Quantity).
+any_quantity_(kind_of(Kind)) =>
+   mapexpr1(root_kind, [_]>>fail, Kind).
+any_quantity_(Quantity) =>
+   mapexpr1(alias_quantity, [_]>>fail, Quantity).
 
-root(BaseQuantity) :-
+:- table alias_or_quantity_parent/2.
+
+% parent of alias is the alias original quantity
+alias_or_quantity_parent(Quantity, Parent) :-
+   child_quantity_parent(Quantity, Parent).
+alias_or_quantity_parent(Alias, Quantity) :-
+   alias(Alias, Quantity).
+
+alias_quantity_formula(Quantity, Formula) :-
+   aliased(units:quantity_formula, Quantity, Formula).
+
+derived_quantity(_*_).
+derived_quantity(_/_).
+derived_quantity(_**_).
+
+:- table root_kind/1.
+
+root_kind(Kind) :-
+   kind(Kind).
+root_kind(BaseQuantity) :-
    base_quantity(BaseQuantity).
-root(Quantity) :-
+root_kind(Quantity) :-
    quantity_parent(Quantity, DerivedQuantity),
    derived_quantity(DerivedQuantity).
+
+:- table quantity_kind/2.
+
+quantity_kind(kind_of(Kind), Kind).
+quantity_kind(Kind, Kind) :-
+   root_kind(Kind).
+quantity_kind(Quantity, Kind) :-
+   alias_or_quantity_parent(Quantity, Parent),
+   quantity_kind(Parent, Kind).
+
+derived_quantity_kind(Quantity, Kind) :-
+   mapexpr(quantity_kind, [_, _]>>fail, Quantity, Kind).
 
 :- table quantity_dimensions/2.
 
@@ -614,10 +620,7 @@ quantity_dimensions(Dimension, Dimension) :-
 quantity_dimensions(kind_of(Quantity), Dimension) :-
    quantity_dimensions(Quantity, Dimension).
 quantity_dimensions(Quantity, Dimensions) :-
-   alias(Quantity, Parent),
-   quantity_dimensions(Parent, Dimensions).
-quantity_dimensions(Quantity, Dimensions) :-
-   quantity_parent(Quantity, Parent),
+   aliased(units:quantity_parent, Quantity, Parent),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, NormalizedDimensions) :-
    derived_quantity(Quantity),
@@ -626,17 +629,17 @@ quantity_dimensions(Quantity, NormalizedDimensions) :-
 
 same_dimension(Q, Q) :- !.
 same_dimension(Q1, Q2) :-
-   when(ground(Q1), quantity_dimensions(Q1, D)),
-   when(ground(Q2), quantity_dimensions(Q2, D)).
+   lazy(quantity_dimensions(Q1, D), Q1),
+   lazy(quantity_dimensions(Q2, D), Q2).
 
-factors_dimensions(Factor, Dimensions) :-
+factor_dimensions(Factor, Dimensions) :-
    generate_expression([Factor], Quantity),
    quantity_dimensions(Quantity, Dimension),
    parse_normalize_factors(Dimension, Dimensions).
 
 simplify_dimensions(Quantity, R) :-
    parse_normalize_factors(Quantity, Factors),
-   maplist(factors_dimensions, Factors, Dimensions),
+   maplist(factor_dimensions, Factors, Dimensions),
    pairs_keys_values(Pairs, Factors, Dimensions),
    phrase(simplify_dimension_pairs, Pairs, SimplifiedPairs),
    pairs_keys(SimplifiedPairs, SimplifiedFactors),
@@ -652,35 +655,6 @@ simplify_dimension_pairs -->
 
 is_inverse(Q-N1, Q-N2) :-
    N2 is -N1.
-
-:- table root_kind/1.
-
-root_kind(Kind) :-
-   kind(Kind).
-root_kind(Root) :-
-   root(Root).
-
-:- table derived_root_kind_/1.
-
-derived_root_kind_(Kind) :-
-   mapexpr([X, X]>>root_kind(X), [X, _]>>domain_error(root_kind, X), Kind, Kind).
-
-derived_root_kind(Kind), \+ ground(Kind) =>
-   when(ground(Kind), derived_root_kind(Kind)).
-derived_root_kind(Kind) =>
-   derived_root_kind_(Kind).
-
-:- table quantity_kind/2.
-
-quantity_kind(kind_of(Kind), Kind).
-quantity_kind(Kind, Kind) :-
-   root_kind(Kind).
-quantity_kind(Quantity, Kind) :-
-   alias_or_quantity_parent(Quantity, Parent),
-   quantity_kind(Parent, Kind).
-
-derived_quantity_kind(Quantity, Kind) :-
-   mapexpr(quantity_kind, [_, 1]>>true, Quantity, Kind).
 
 common_quantity(Q1, Q2, Q) :-
    same_dimension(Q1, Q2),
@@ -730,7 +704,7 @@ same_kind(Q1, Q2) =>
 %
 implicitly_convertible(From, To, Explicit) :-
    normalize(To, NormalizedTo),
-   mapexpr(alias_parent, NormalizedTo, AliasNormalizedTo),
+   mapexpr(alias, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
    (  AliasNormalizedTo = kind_of(_), CommonQuantity = From
    ;  CommonQuantity = AliasNormalizedTo
@@ -742,7 +716,7 @@ implicitly_convertible(From, To, Explicit) :-
    !.
 implicitly_convertible(From, ToKind, Explicit) :-
    root_kind(ToKind),
-   alias_quantity_parent(ToKind, Formula),
+   aliased(units:child_quantity_parent, ToKind, Formula),
    implicitly_convertible(From, Formula, Explicit),
    derived_quantity_kind(From, FromKind),
    normalize(FromKind, NormalizedFromKind),
@@ -1207,7 +1181,7 @@ eval_(in(Expr, Unit), R) =>
       ;  domain_error(M.q, Q.q)
       )
    ).
-eval_(as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
+eval_(as(Expr, Quantity), R), any_quantity(Quantity) =>
    eval_(Expr, M),
    (  is_dict(M, qp)
    -> eval_(as(M.q, Quantity), Q),
@@ -1217,7 +1191,7 @@ eval_(as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
       ;  domain_error(M.q, Quantity)
       )
    ).
-eval_(force_as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
+eval_(force_as(Expr, Quantity), R), any_quantity(Quantity) =>
    eval_(Expr, M),
    (  is_dict(M, qp)
    -> eval_(force_as(M.q, Quantity), Q),
@@ -1227,7 +1201,7 @@ eval_(force_as(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
       ;  domain_error(M.q, Quantity)
       )
    ).
-eval_(cast(Expr, Quantity), R), alias_derived_quantity(Quantity) =>
+eval_(cast(Expr, Quantity), R), any_quantity(Quantity) =>
    eval_(Expr, M),
    (  is_dict(M, qp)
    -> eval_(cast(M.q, Quantity), Q),
@@ -1305,12 +1279,10 @@ eval_(Point, R), is_dict(Point, qp) =>
 eval_(Origin, R), alias_origin(Origin) =>
    normalize_origin(Origin, R).
 
-eval_q(quantity(Q), R), alias_derived_quantity(Q) =>
+eval_q(quantity(Q), R), any_quantity(Q) =>
    R = Q.
-eval_q(X, R), alias_derived_quantity(X) =>
+eval_q(X, R), any_quantity(X) =>
    R = X.
-eval_q(kind_of(Kind), R), derived_root_kind(Kind) =>
-   R = kind_of(Kind).
 
 :- begin_tests(units).
 

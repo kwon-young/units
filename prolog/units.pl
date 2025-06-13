@@ -532,8 +532,8 @@ expand_factor(Type, Unit-N, Factors) :-
    ),
    parse_normalize_factors(Formula**N, Factors).
 
-:- table aliased/2.
 :- meta_predicate aliased(1, ?).
+:- table aliased/2.
 
 aliased(Goal, A) :-
    call(Goal, A).
@@ -541,14 +541,23 @@ aliased(Goal, A) :-
    alias(A, B),
    aliased(Goal, B).
 
-:- table aliased/3.
 :- meta_predicate aliased(2, ?, ?).
+:- table aliased/3.
 
 aliased(Goal, A, B) :-
    call(Goal, A, B).
 aliased(Goal, Alias, B) :-
    alias(Alias, A),
    aliased(Goal, A, B).
+
+:- meta_predicate aliased(3, ?, ?, ?).
+:- table aliased/4.
+
+aliased(Goal, A, B, C) :-
+   call(Goal, A, B, C).
+aliased(Goal, Alias, B, C) :-
+   alias(Alias, A),
+   aliased(Goal, A, B, C).
 
 :- meta_predicate lazy(0, ?).
 
@@ -587,9 +596,9 @@ alias_or_quantity_parent(Alias, Quantity) :-
 alias_quantity_formula(Quantity, Formula) :-
    aliased(units:quantity_formula, Quantity, Formula).
 
-derived_quantity(_*_).
-derived_quantity(_/_).
-derived_quantity(_**_).
+derived(_*_).
+derived(_/_).
+derived(_**_).
 
 :- table root_kind/1.
 
@@ -599,7 +608,7 @@ root_kind(BaseQuantity) :-
    base_quantity(BaseQuantity).
 root_kind(Quantity) :-
    quantity_parent(Quantity, DerivedQuantity),
-   derived_quantity(DerivedQuantity).
+   derived(DerivedQuantity).
 
 :- table quantity_kind/2.
 
@@ -623,7 +632,7 @@ quantity_dimensions(Quantity, Dimensions) :-
    aliased(units:quantity_parent, Quantity, Parent),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, NormalizedDimensions) :-
-   derived_quantity(Quantity),
+   derived(Quantity),
    mapexpr(quantity_dimensions, Quantity, Dimensions),
    normalize_dimension(Dimensions, NormalizedDimensions).
 
@@ -746,37 +755,19 @@ explicitly_convertible_(From, To) :-
 explicitly_convertible_(From, To) :-
    implicitly_convertible(To, From, true).
 
-:- table alias_or_unit_symbol/2.
-
-alias_or_unit_symbol(Unit, Symbol) :-
+any_unit_symbol(Unit, Symbol) :-
    (  unit_symbol(Unit, Symbol)
    ;  unit_symbol_formula(Unit, Symbol, _)
    ).
-alias_or_unit_symbol(Alias, Symbol) :-
-   alias(Alias, Unit),
-   alias_or_unit_symbol(Unit, Symbol).
-
-:- table alias_unit_symbol_formula/3.
-
-alias_unit_symbol_formula(Unit, Symbol, Formula) :-
-   unit_symbol_formula(Unit, Symbol, Formula).
-alias_unit_symbol_formula(Alias, Symbol, Unit) :-
-   alias(Alias, Unit),
-   alias_or_unit_symbol(Unit, Symbol).
-
-:- table has_prefix/2.
 
 has_prefix(Module:PrefixUnit, Symbol) :-
    prefix(Module:Prefix, PrefixSymbol, _),
    PrefixUnit =.. [Prefix, Unit],
-   (  alias_or_unit_symbol(Unit, UnitSymbol),
+   (  aliased(units:any_unit_symbol, Unit, UnitSymbol),
       atom_concat(PrefixSymbol, UnitSymbol, Symbol)
    -> true
    ;  domain_error("has_prefix", Module:PrefixUnit-Symbol)
    ).
-has_prefix(Alias, Symbol) :-
-   alias(Alias, Unit),
-   has_prefix(Unit, Symbol).
 
 :- table prefix_unit_symbol_formula/3.
 
@@ -784,23 +775,20 @@ prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
    \+ compound(Symbol),
    prefix(Module:Prefix, PrefixSymbol, PrefixFormula),
    PrefixUnit =.. [Prefix, Unit],
-   alias_or_unit_symbol(Unit, UnitSymbol),
+   aliased(units:any_unit_symbol, Unit, UnitSymbol),
    \+ has_prefix(Unit, UnitSymbol),
    atom_concat(PrefixSymbol, UnitSymbol, Symbol).
-
-:- table alias_prefix_unit_symbol_formula/3.
-
-alias_prefix_unit_symbol_formula(PrefixUnit, Symbol, Formula) :-
-   prefix_unit_symbol_formula(PrefixUnit, Symbol, Formula).
-alias_prefix_unit_symbol_formula(Alias, Symbol, Formula) :-
-   alias(Alias, Unit),
-   alias_prefix_unit_symbol_formula(Unit, Symbol, Formula).
 
 :- table unit/3.
 
 unit(U, S, F) :-
-   (  alias_unit_symbol_formula(U, S, F)
-   ;  alias_prefix_unit_symbol_formula(U, S, F)
+   alias(U, F),
+   (  aliased(units:any_unit_symbol, F, S)
+   ;  aliased(units:prefix_unit_symbol_formula, F, S, _)
+   ).
+unit(U, S, F) :-
+   (  unit_symbol_formula(U, S, F)
+   ;  prefix_unit_symbol_formula(U, S, F)
    ).
 
 :- table unit/2.
@@ -819,7 +807,7 @@ all_unit_kind_(Unit, R), unit_kind(Unit, Kind) =>
    R = kind_of(Kind).
 all_unit_kind_(Unit, R), unit(Unit, _, Formula) =>
    all_unit_kind_(Formula, R).
-all_unit_kind_(Unit, R), derived_quantity(Unit) =>
+all_unit_kind_(Unit, R), derived(Unit) =>
    mapexpr(all_unit_kind_, [_, 1]>>true, Unit, Kind),
    normalize(Kind, NKind),
    normalize_kind(NKind, R).
@@ -987,7 +975,7 @@ normalize_unit(PrefixUnit, R),
    normalize_unit(Unit, R1),
    R2 =.. [Prefix, R1],
    R = Module:R2.
-normalize_unit(U, R), derived_quantity(U) =>
+normalize_unit(U, R), derived(U) =>
    mapexpr(normalize_unit, U, R).
 normalize_unit(_, _) => fail.
 

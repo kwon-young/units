@@ -396,7 +396,7 @@ qformat(VFormat, M) :-
    -> Symbol = "",
       Space = ""
    ;  mapexpr(unit, U, Symbol),
-      (  alias_no_space_before_unit_symbol(U)
+      (  aliased(units:no_space_before_unit_symbol, U)
       -> Space = ""
       ;  Space = " "
       )
@@ -832,12 +832,6 @@ common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Uni
    NewUnit = Unit2.
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) =>
    common_expr(unit, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
-
-alias_no_space_before_unit_symbol(Unit) :-
-   no_space_before_unit_symbol(Unit).
-alias_no_space_before_unit_symbol(Alias) :-
-   alias(Alias, Unit),
-   alias_no_space_before_unit_symbol(Unit).
 
 unit_origin_0(Unit, Origin) =>
    (  unit_origin(Unit, O)

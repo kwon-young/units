@@ -620,7 +620,7 @@ quantity_dimensions(Quantity, Dimensions) :-
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, NormalizedDimensions) :-
    derived(Quantity),
-   mapexpr(quantity_dimensions, Quantity, Dimensions),
+   mapexpr(quantity_dimensions, [_, _]>>fail, Quantity, Dimensions),
    normalize_dimension(Dimensions, NormalizedDimensions).
 
 same_dimension(Q, Q) :- !.
@@ -800,6 +800,58 @@ all_unit_kind_(Unit, R), derived(Unit) =>
    normalize_kind(NKind, R).
 all_unit_kind_(_, _) => fail.
 
+normalize_kind_(kind_of(A)/kind_of(B), R) =>
+   normalize(A/B, AB),
+   R = kind_of(AB).
+normalize_kind_(kind_of(A)*kind_of(B), R) =>
+   normalize(A*B, AB),
+   R = kind_of(AB).
+normalize_kind_(kind_of(A)**N, R) =>
+   normalize(A**N, AN),
+   R = kind_of(AN).
+normalize_kind_(kind_of(A)/B, R) =>
+   normalize(A/B, R).
+normalize_kind_(A/kind_of(B), R) =>
+   normalize(A/B, R).
+normalize_kind_(kind_of(A)*B, R) =>
+   normalize(A*B, R).
+normalize_kind_(A*kind_of(B), R) =>
+   normalize(A*B, R).
+normalize_kind_(_, _) => fail.
+
+normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
+   normalize_kind(E1, R).
+normalize_kind(E, R) =>
+   normalize(E, R).
+
+normalize_unit(Unit, R), var(Unit), ground(R) =>
+   Unit = R.
+normalize_unit(Unit, R), var(Unit), var(R) =>
+   when((ground(Unit) ; ground(R)), normalize_unit(Unit, R)).
+normalize_unit(Unit, R), unit(Unit, _) =>
+   R = Unit.
+normalize_unit(Symbol, R), unit(Unit, Symbol) =>
+   R = Unit.
+normalize_unit(Unit, R), unit(Module:Unit, _) =>
+   R = Module:Unit.
+normalize_unit(Module:Symbol, R), unit(Module:Unit, Symbol) =>
+   R = Module:Unit.
+normalize_unit(Module:PrefixUnit, R),
+      PrefixUnit =.. [Prefix, Unit],
+      prefix(Module:Prefix, _, _) =>
+   normalize_unit(Unit, R1),
+   R2 =.. [Prefix, R1],
+   R = Module:R2.
+normalize_unit(PrefixUnit, R),
+      PrefixUnit =.. [Prefix, Unit],
+      prefix(Module:Prefix, _, _) =>
+   normalize_unit(Unit, R1),
+   R2 =.. [Prefix, R1],
+   R = Module:R2.
+normalize_unit(U, R), derived(U) =>
+   mapexpr(normalize_unit, [_, _]>>fail, U, R).
+normalize_unit(_, _) => fail.
+
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Unit2, _) =>
    Unit1 = Unit2,
    NewFactor1 = 1,
@@ -937,58 +989,6 @@ comparable_is(A, qp:B, R) =>
    ;  Origin = O
    ),
    A = Origin+AQ.
-
-normalize_unit(Unit, R), var(Unit), ground(R) =>
-   Unit = R.
-normalize_unit(Unit, R), var(Unit), var(R) =>
-   when((ground(Unit) ; ground(R)), normalize_unit(Unit, R)).
-normalize_unit(Unit, R), unit(Unit, _) =>
-   R = Unit.
-normalize_unit(Symbol, R), unit(Unit, Symbol) =>
-   R = Unit.
-normalize_unit(Unit, R), unit(Module:Unit, _) =>
-   R = Module:Unit.
-normalize_unit(Module:Symbol, R), unit(Module:Unit, Symbol) =>
-   R = Module:Unit.
-normalize_unit(Module:PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
-   R2 =.. [Prefix, R1],
-   R = Module:R2.
-normalize_unit(PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
-   R2 =.. [Prefix, R1],
-   R = Module:R2.
-normalize_unit(U, R), derived(U) =>
-   mapexpr(normalize_unit, U, R).
-normalize_unit(_, _) => fail.
-
-normalize_kind_(kind_of(A)/kind_of(B), R) =>
-   normalize(A/B, AB),
-   R = kind_of(AB).
-normalize_kind_(kind_of(A)*kind_of(B), R) =>
-   normalize(A*B, AB),
-   R = kind_of(AB).
-normalize_kind_(kind_of(A)**N, R) =>
-   normalize(A**N, AN),
-   R = kind_of(AN).
-normalize_kind_(kind_of(A)/B, R) =>
-   normalize(A/B, R).
-normalize_kind_(A/kind_of(B), R) =>
-   normalize(A/B, R).
-normalize_kind_(kind_of(A)*B, R) =>
-   normalize(A*B, R).
-normalize_kind_(A*kind_of(B), R) =>
-   normalize(A*B, R).
-normalize_kind_(_, _) => fail.
-
-normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
-   normalize_kind(E1, R).
-normalize_kind(E, R) =>
-   normalize(E, R).
 
 %% qeval(+Expr) is det.
 %

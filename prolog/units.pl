@@ -861,7 +861,7 @@ common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) =>
    common_expr(unit, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 unit_origin_0(Unit, Origin) =>
-   (  unit_origin(Unit, O)
+   (  aliased(units:unit_origin(Unit, O))
    -> normalize_origin(O, Origin)
    ;  eval_(0*Unit, Q),
       Origin = qp{o: 0, q: Q}
@@ -883,7 +883,7 @@ alias_origin(Origin) :-
 normalize_origin(Origin, qp{o: Origin, q: Q}) :-
    when(ground(Origin), normalize_origin_(Origin, Q)),
    eval_(0*_[_], Q).
-normalize_origin_(Origin, Q), unit_origin(Unit, Origin) =>
+normalize_origin_(Origin, Q), aliased(units:unit_origin(Unit, Origin)) =>
    eval_(Unit, R),
    Q = R.put([v=0]).
 normalize_origin_(Origin, Q), absolute_point_origin(Origin, Quantity) =>

@@ -524,13 +524,15 @@ select_factor(L1, R1, Type, L, N) -->
 
 expand_factors(Type, A), Factors -->
    { expand_factor(Type, A, Factors) }.
-expand_factor(Type, Unit-N, Factors) :-
-   (  Type == unit
-   -> unit(Unit, _, Formula)
+expand_factor(Type, Child-N, Factors) :-
+   (  alias(Child, Parent)
+   -> true
+   ;  Type == unit
+   -> unit(Child, _, Parent)
    ;  Type == quantity,
-      alias_or_quantity_parent(Unit, Formula)
+      child_quantity_parent(Child, Parent)
    ),
-   parse_normalize_factors(Formula**N, Factors).
+   parse_normalize_factors(Parent**N, Factors).
 
 replace_arg1(A, B, M:T1, M:T2) :-
    T1 =.. [F, A | Args],
@@ -572,14 +574,6 @@ any_quantity_(kind_of(Kind)) =>
 any_quantity_(Quantity) =>
    mapexpr1(alias_quantity, [_]>>fail, Quantity).
 
-:- table alias_or_quantity_parent/2.
-
-% parent of alias is the alias original quantity
-alias_or_quantity_parent(Quantity, Parent) :-
-   child_quantity_parent(Quantity, Parent).
-alias_or_quantity_parent(Alias, Quantity) :-
-   alias(Alias, Quantity).
-
 alias_quantity_formula(Quantity, Formula) :-
    aliased(units:quantity_formula(Quantity, Formula)).
 
@@ -603,7 +597,9 @@ quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
    root_kind(Kind).
 quantity_kind(Quantity, Kind) :-
-   alias_or_quantity_parent(Quantity, Parent),
+   (  alias(Quantity, Parent)
+   ;  child_quantity_parent(Quantity, Parent)
+   ),
    quantity_kind(Parent, Kind).
 
 derived_quantity_kind(Quantity, Kind) :-

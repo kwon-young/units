@@ -476,10 +476,9 @@ iterative_deepening(Limit, Goal) :-
       )
    ).
 
-is_of(unit, U-_) :-
-   unit(U, _).
-is_of(quantity, Q-_) :-
-   alias_quantity(Q).
+is_of(_, X-_) :-
+   \+ number(X),
+   \+ X == pi.
 
 :- meta_predicate partition_soft(1,+,-,-).
 
@@ -495,7 +494,16 @@ partition_soft_([H|T], Pred, Incl, Excl) :-
         partition_soft_(T, Pred, Incl, E)
     ).
 
+select_(E, L, R) :-
+   (  select(E, L, R)
+   ;  L = R
+   ).
+
 common_factors(L1, R1, Type, L, N, L2, R2) :-
+   exclude(ground, L1, Vars1),
+   foldl(select_, Vars1, L2, _),
+   exclude(ground, L2, Vars2),
+   foldl(select_, Vars2, L1, _),
    partition_soft(is_of(Type), L1, Unit1, Factor1),
    normalize_factors(Unit1, NUnit1),
    partition_soft(is_of(Type), L2, Unit2, Factor2),
@@ -955,7 +963,8 @@ comparable(+, qp:A, q:B, R) =>
 comparable(+, q:A, qp:B, R) =>
    comparable(+, qp:B, q:A, R).
 comparable(Op, q:A, q:B, R) =>
-   (  same_kind(A.q, B.q), common_quantity(A.q, B.q, Q)
+   (  common_quantity(A.q, B.q, Q),
+      same_kind(A.q, B.q)
    -> (  common_unit(A.u, AV, B.u, BV, U)
       -> (  Op == is
          -> A.v = A2,
@@ -1338,7 +1347,10 @@ avg_speed(Distance, Time, Speed) :-
 test('avg_speed') :-
    avg_speed(220 * isq:distance[si:kilo(metre)], 2 * si:hour, _Speed).
 test('avg_speed2') :-
-   avg_speed(isq:height[inch], quantity _Time, isq:speed[m/hour]).
+   avg_speed(isq:height[inch], quantity Time, isq:speed[m/si:hour]),
+   Time = _*Q[U],
+   Q == isq:time,
+   U == si:hour.
 
 test('in as') :-
    qeval(_Speed is (m/s in inch/hour) as isq:speed).

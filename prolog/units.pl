@@ -867,18 +867,15 @@ unit_origin_0(Unit, Origin) =>
       Origin = qp{o: 0, q: Q}
    ).
 
-:- table alias_origin_/1.
+:- table all_origin_/1.
 
-alias_origin_(Origin) :-
+all_origin_(Origin) :-
    (  absolute_point_origin(Origin, _)
    ;  relative_point_origin(Origin, _)
    ).
-alias_origin_(Alias) :-
-   alias(Alias, Origin),
-   alias_origin_(Origin).
 
-alias_origin(Origin) :-
-   when(ground(Origin), alias_origin_(Origin)).
+all_origin(Origin) :-
+   lazy(aliased(units:all_origin_(Origin)), Origin).
 
 normalize_origin(Origin, qp{o: Origin, q: Q}) :-
    when(ground(Origin), normalize_origin_(Origin, Q)),
@@ -1200,7 +1197,7 @@ eval_(quantity_point(QP), R) =>
    ;  Quantity = Q
    ),
    eval_(Origin + Quantity, R).
-eval_(origin(Origin), R), alias_origin(Origin) =>
+eval_(origin(Origin), R), all_origin(Origin) =>
    normalize_origin(Origin, R).
 eval_(exp(Expr), R) =>
    eval_(Expr in 1, R1),
@@ -1227,7 +1224,7 @@ eval_(UnitOrSymbol, R), ground(UnitOrSymbol), normalize_unit(UnitOrSymbol, Unit)
    R = q{v: 1, q: Kind, u: Unit}.
 eval_(Point, R), is_dict(Point, qp) =>
    R = Point.
-eval_(Origin, R), alias_origin(Origin) =>
+eval_(Origin, R), all_origin(Origin) =>
    normalize_origin(Origin, R).
 
 eval_q(quantity(Q), R), any_quantity(Q) =>

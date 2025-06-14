@@ -9,6 +9,10 @@
    mapexpr/4
 ]).
 
+:- use_module(library(yall)).
+:- use_module(library(apply)).
+:- use_module(library(apply_macros)).
+
 %% normalize(+Expression, -NormalizedExpression) is det.
 %
 %  Converts an arithmetic `Expression` involving multiplication (`*`),
@@ -145,8 +149,11 @@ parse_normalize_factors(In, L3) :-
 
 aggregate(L, L2) :-
    group_pairs_by_key(L, Groups),
-   maplist([A-Ns, A-N]>>sum_list(Ns, N), Groups, L1),
+   maplist(sum_list_, Groups, L1),
    simplify(L1, L2).
+
+sum_list_(A-Ns, A-N) :-
+   sum_list(Ns, N).
 
 simplify([], R) => R = [].
 simplify([_-0 | T], R) =>

@@ -463,9 +463,11 @@ common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
          F1, NewF1, Type, NewUnits, N, F2, NewF2))),
    msort(NewUnits, SortedNewUnits),
    maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
-           [NewFactor1, NewFactor2, NewUnit]).
+           [NewFactor1, NewFactor2, NewUnit]),
+   debug(common_expr, "~p*~p = ~p*~p = ~p~n", [Unit1, NewFactor1, Unit2, NewFactor2, NewUnit]).
 
 iterative_deepening(Limit, Goal) :-
+   debug(iterative_deepening, "Depth ~p~n", [Limit]),
    N = n(no),
    (  call(Goal, Limit-N)
    -> true
@@ -476,23 +478,9 @@ iterative_deepening(Limit, Goal) :-
       )
    ).
 
-is_of(_, X-_) :-
+not_factor(X-_) :-
    \+ number(X),
    \+ X == pi.
-
-:- meta_predicate partition_soft(1,+,-,-).
-
-partition_soft(Pred, List, Included, Excluded) :-
-    partition_soft_(List, Pred, Included, Excluded).
-
-partition_soft_([], _, [], []).
-partition_soft_([H|T], Pred, Incl, Excl) :-
-    (   call(Pred, H)
-    *->  Incl=[H|I],
-        partition_soft_(T, Pred, I, Excl)
-    ;   Excl=[H|E],
-        partition_soft_(T, Pred, Incl, E)
-    ).
 
 select_(E, L, R) :-
    (  select(E, L, R)
@@ -504,9 +492,9 @@ common_factors(L1, R1, Type, L, N, L2, R2) :-
    foldl(select_, Vars1, L2, _),
    exclude(ground, L2, Vars2),
    foldl(select_, Vars2, L1, _),
-   partition_soft(is_of(Type), L1, Unit1, Factor1),
+   partition(not_factor, L1, Unit1, Factor1),
    normalize_factors(Unit1, NUnit1),
-   partition_soft(is_of(Type), L2, Unit2, Factor2),
+   partition(not_factor, L2, Unit2, Factor2),
    normalize_factors(Unit2, NUnit2),
    ord_intersection(NUnit1, NUnit2, CommonUnits, Unit2Only),
    ord_subtract(NUnit1, NUnit2, Unit1Only),
@@ -863,8 +851,9 @@ common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Uni
    NewFactor2 = 1,
    NewUnit = Unit2.
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) =>
-   common_expr([Child, Parent]>>unit(Child, _, Parent),
-               Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+   common_expr(unit_parent, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+unit_parent(Child, Parent) :-
+   unit(Child, _, Parent).
 
 unit_origin_0(Unit, Origin) =>
    (  aliased(units:unit_origin(Unit, O))
@@ -1239,7 +1228,7 @@ eval_q(quantity(Q), R), any_quantity(Q) =>
 eval_q(X, R), any_quantity(X) =>
    R = X.
 
-:- begin_tests(units).
+:- begin_tests(units, [setup(abolish_all_tables)]).
 
 qeval_data(si:metre =:= si:metre).
 qeval_data(si:kilo(metre) =:= si:kilo(metre)).
@@ -1514,5 +1503,9 @@ test(has_type_examples) :-
 test(has_type_fail_example, [error(type_error(isq:time, _))]) :-
    qeval(X_len is 10*si:metre),
    must_be(isq:time, X_len).
+
+test(slow_conversion) :-
+   qeval(_X*ft*lbf/s =:= 1*watt).
+
 
 :- end_tests(units).

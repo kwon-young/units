@@ -883,7 +883,7 @@ alias_origin(Origin) :-
 normalize_origin(Origin, qp{o: Origin, q: Q}) :-
    when(ground(Origin), normalize_origin_(Origin, Q)),
    eval_(0*_[_], Q).
-normalize_origin_(Origin, Q), aliased(units:unit_origin(Unit, Origin)) =>
+normalize_origin_(Origin, Q), unit_origin(Unit, Origin) =>
    eval_(Unit, R),
    Q = R.put([v=0]).
 normalize_origin_(Origin, Q), absolute_point_origin(Origin, Quantity) =>

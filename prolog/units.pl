@@ -979,15 +979,6 @@ normalize_unit(U, R), derived(U) =>
    mapexpr(normalize_unit, U, R).
 normalize_unit(_, _) => fail.
 
-normalize_kind_(kind_of(A)**N1/kind_of(B)**N2, R) =>
-   normalize(A**N1/B**N2, AB),
-   R = kind_of(AB).
-normalize_kind_(kind_of(A)/kind_of(B)**N, R) =>
-   normalize(A/B**N, AB),
-   R = kind_of(AB).
-normalize_kind_(kind_of(A)**N/kind_of(B), R) =>
-   normalize(A**N/B, AB),
-   R = kind_of(AB).
 normalize_kind_(kind_of(A)/kind_of(B), R) =>
    normalize(A/B, AB),
    R = kind_of(AB).
@@ -997,15 +988,6 @@ normalize_kind_(kind_of(A)*kind_of(B), R) =>
 normalize_kind_(kind_of(A)**N, R) =>
    normalize(A**N, AN),
    R = kind_of(AN).
-normalize_kind_(kind_of(A)/1, R) =>
-   R = kind_of(A).
-normalize_kind_(1/kind_of(A), R) =>
-   normalize(1/A, AN),
-   R = kind_of(AN).
-normalize_kind_(kind_of(A)*1, R) =>
-   R = kind_of(A).
-normalize_kind_(1*kind_of(A), R) =>
-   R = kind_of(A).
 normalize_kind_(kind_of(A)/B, R) =>
    normalize(A/B, R).
 normalize_kind_(A/kind_of(B), R) =>

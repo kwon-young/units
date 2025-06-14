@@ -396,7 +396,7 @@ qformat(VFormat, M) :-
    -> Symbol = "",
       Space = ""
    ;  mapexpr(unit, U, Symbol),
-      (  aliased(units:no_space_before_unit_symbol(U))
+      (  aliased(no_space_before_unit_symbol(U))
       -> Space = ""
       ;  Space = " "
       )
@@ -453,9 +453,14 @@ error:has_type(Quantity, Term) :-
    ),
    implicitly_convertible(Q, Quantity).
 
-:- table common_expr/6.
+:- meta_predicate common_expr(2, +, ?, +, ?, -).
 
 common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+   common_expr_(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+
+:- table common_expr_/6.
+
+common_expr_(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    parse_normalize_factors(Unit1, F1),
    parse_normalize_factors(Unit2, F2),
    once(iterative_deepening(1,
@@ -530,14 +535,18 @@ replace_arg1(A, B, M:T1, M:T2) :-
    T2 =.. [F, B | Args].
 
 :- meta_predicate aliased(0).
-:- table aliased/1.
 
 aliased(Goal) :-
+   aliased_(Goal).
+
+:- table aliased_/1.
+
+aliased_(Goal) :-
    call(Goal).
-aliased(Goal) :-
+aliased_(Goal) :-
    replace_arg1(A, B, Goal, Goal1),
    alias(A, B),
-   aliased(Goal1).
+   aliased_(Goal1).
 
 :- meta_predicate lazy(0, ?).
 
@@ -555,7 +564,7 @@ child_quantity_parent(Child, Parent) :-
    \+ dimension_symbol(Parent, _).
 
 alias_quantity(Quantity) :-
-   aliased(units:quantity_parent(Quantity, _)).
+   aliased(quantity_parent(Quantity, _)).
 
 % derived quantity, with alias, lazy
 any_quantity(Quantity) :-
@@ -566,7 +575,7 @@ any_quantity_(Quantity) =>
    mapexpr1(alias_quantity, [_]>>fail, Quantity).
 
 alias_quantity_formula(Quantity, Formula) :-
-   aliased(units:quantity_formula(Quantity, Formula)).
+   aliased(quantity_formula(Quantity, Formula)).
 
 derived(_*_).
 derived(_/_).
@@ -603,7 +612,7 @@ quantity_dimensions(Dimension, Dimension) :-
 quantity_dimensions(kind_of(Quantity), Dimension) :-
    quantity_dimensions(Quantity, Dimension).
 quantity_dimensions(Quantity, Dimensions) :-
-   aliased(units:quantity_parent(Quantity, Parent)),
+   aliased(quantity_parent(Quantity, Parent)),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, NormalizedDimensions) :-
    derived(Quantity),
@@ -668,7 +677,7 @@ common_quantity_(Q1, Q2, Q) =>
 
 alias_or_child_quantity_parent(Child, Parent) :-
    (  alias(Child, Parent),
-      aliased(units:quantity_parent(Parent, _))
+      aliased(quantity_parent(Parent, _))
    ;  child_quantity_parent(Child, Parent)
    ).
 
@@ -705,7 +714,7 @@ implicitly_convertible(From, To, Explicit) :-
    !.
 implicitly_convertible(From, ToKind, Explicit) :-
    root_kind(ToKind),
-   aliased(units:child_quantity_parent(ToKind, Formula)),
+   aliased(child_quantity_parent(ToKind, Formula)),
    implicitly_convertible(From, Formula, Explicit),
    derived_quantity_kind(From, FromKind),
    normalize(FromKind, NormalizedFromKind),
@@ -743,7 +752,7 @@ any_unit_symbol(Unit, Symbol) :-
 has_prefix(Module:PrefixUnit, Symbol) :-
    prefix(Module:Prefix, PrefixSymbol, _),
    PrefixUnit =.. [Prefix, Unit],
-   (  aliased(units:any_unit_symbol(Unit, UnitSymbol)),
+   (  aliased(any_unit_symbol(Unit, UnitSymbol)),
       atom_concat(PrefixSymbol, UnitSymbol, Symbol)
    -> true
    ;  domain_error("has_prefix", Module:PrefixUnit-Symbol)
@@ -755,7 +764,7 @@ prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
    \+ compound(Symbol),
    prefix(Module:Prefix, PrefixSymbol, PrefixFormula),
    PrefixUnit =.. [Prefix, Unit],
-   aliased(units:any_unit_symbol(Unit, UnitSymbol)),
+   aliased(any_unit_symbol(Unit, UnitSymbol)),
    \+ has_prefix(Unit, UnitSymbol),
    atom_concat(PrefixSymbol, UnitSymbol, Symbol).
 
@@ -763,8 +772,8 @@ prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
 
 unit(U, S, F) :-
    alias(U, F),
-   (  aliased(units:any_unit_symbol(F, S))
-   ;  aliased(units:prefix_unit_symbol_formula(F, S, _))
+   (  aliased(any_unit_symbol(F, S))
+   ;  aliased(prefix_unit_symbol_formula(F, S, _))
    ).
 unit(U, S, F) :-
    (  unit_symbol_formula(U, S, F)
@@ -856,7 +865,7 @@ unit_parent(Child, Parent) :-
    unit(Child, _, Parent).
 
 unit_origin_0(Unit, Origin) =>
-   (  aliased(units:unit_origin(Unit, O))
+   (  aliased(unit_origin(Unit, O))
    -> normalize_origin(O, Origin)
    ;  eval_(0*Unit, Q),
       Origin = qp{o: 0, q: Q}
@@ -870,7 +879,7 @@ all_origin_(Origin) :-
    ).
 
 all_origin(Origin) :-
-   lazy(aliased(units:all_origin_(Origin)), Origin).
+   lazy(aliased(all_origin_(Origin)), Origin).
 
 normalize_origin(Origin, qp{o: Origin, q: Q}) :-
    when(ground(Origin), normalize_origin_(Origin, Q)),

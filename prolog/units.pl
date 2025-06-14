@@ -396,7 +396,7 @@ qformat(VFormat, M) :-
    -> Symbol = "",
       Space = ""
    ;  mapexpr(unit, U, Symbol),
-      (  aliased(units:no_space_before_unit_symbol, U)
+      (  aliased(units:no_space_before_unit_symbol(U))
       -> Space = ""
       ;  Space = " "
       )
@@ -532,32 +532,19 @@ expand_factor(Type, Unit-N, Factors) :-
    ),
    parse_normalize_factors(Formula**N, Factors).
 
-:- meta_predicate aliased(1, ?).
-:- table aliased/2.
+replace_arg1(A, B, M:T1, M:T2) :-
+   T1 =.. [F, A | Args],
+   T2 =.. [F, B | Args].
 
-aliased(Goal, A) :-
-   call(Goal, A).
-aliased(Goal, A) :-
+:- meta_predicate aliased(0).
+:- table aliased/1.
+
+aliased(Goal) :-
+   call(Goal).
+aliased(Goal) :-
+   replace_arg1(A, B, Goal, Goal1),
    alias(A, B),
-   aliased(Goal, B).
-
-:- meta_predicate aliased(2, ?, ?).
-:- table aliased/3.
-
-aliased(Goal, A, B) :-
-   call(Goal, A, B).
-aliased(Goal, Alias, B) :-
-   alias(Alias, A),
-   aliased(Goal, A, B).
-
-:- meta_predicate aliased(3, ?, ?, ?).
-:- table aliased/4.
-
-aliased(Goal, A, B, C) :-
-   call(Goal, A, B, C).
-aliased(Goal, Alias, B, C) :-
-   alias(Alias, A),
-   aliased(Goal, A, B, C).
+   aliased(Goal1).
 
 :- meta_predicate lazy(0, ?).
 
@@ -575,7 +562,7 @@ child_quantity_parent(Child, Parent) :-
    \+ dimension_symbol(Parent, _).
 
 alias_quantity(Quantity) :-
-   aliased(units:quantity_parent, Quantity, _).
+   aliased(units:quantity_parent(Quantity, _)).
 
 % derived quantity, with alias, lazy
 any_quantity(Quantity) :-
@@ -594,7 +581,7 @@ alias_or_quantity_parent(Alias, Quantity) :-
    alias(Alias, Quantity).
 
 alias_quantity_formula(Quantity, Formula) :-
-   aliased(units:quantity_formula, Quantity, Formula).
+   aliased(units:quantity_formula(Quantity, Formula)).
 
 derived(_*_).
 derived(_/_).
@@ -629,7 +616,7 @@ quantity_dimensions(Dimension, Dimension) :-
 quantity_dimensions(kind_of(Quantity), Dimension) :-
    quantity_dimensions(Quantity, Dimension).
 quantity_dimensions(Quantity, Dimensions) :-
-   aliased(units:quantity_parent, Quantity, Parent),
+   aliased(units:quantity_parent(Quantity, Parent)),
    quantity_dimensions(Parent, Dimensions).
 quantity_dimensions(Quantity, NormalizedDimensions) :-
    derived(Quantity),
@@ -725,7 +712,7 @@ implicitly_convertible(From, To, Explicit) :-
    !.
 implicitly_convertible(From, ToKind, Explicit) :-
    root_kind(ToKind),
-   aliased(units:child_quantity_parent, ToKind, Formula),
+   aliased(units:child_quantity_parent(ToKind, Formula)),
    implicitly_convertible(From, Formula, Explicit),
    derived_quantity_kind(From, FromKind),
    normalize(FromKind, NormalizedFromKind),
@@ -763,7 +750,7 @@ any_unit_symbol(Unit, Symbol) :-
 has_prefix(Module:PrefixUnit, Symbol) :-
    prefix(Module:Prefix, PrefixSymbol, _),
    PrefixUnit =.. [Prefix, Unit],
-   (  aliased(units:any_unit_symbol, Unit, UnitSymbol),
+   (  aliased(units:any_unit_symbol(Unit, UnitSymbol)),
       atom_concat(PrefixSymbol, UnitSymbol, Symbol)
    -> true
    ;  domain_error("has_prefix", Module:PrefixUnit-Symbol)
@@ -775,7 +762,7 @@ prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
    \+ compound(Symbol),
    prefix(Module:Prefix, PrefixSymbol, PrefixFormula),
    PrefixUnit =.. [Prefix, Unit],
-   aliased(units:any_unit_symbol, Unit, UnitSymbol),
+   aliased(units:any_unit_symbol(Unit, UnitSymbol)),
    \+ has_prefix(Unit, UnitSymbol),
    atom_concat(PrefixSymbol, UnitSymbol, Symbol).
 
@@ -783,8 +770,8 @@ prefix_unit_symbol_formula(Module:PrefixUnit, Symbol, PrefixFormula*Unit) :-
 
 unit(U, S, F) :-
    alias(U, F),
-   (  aliased(units:any_unit_symbol, F, S)
-   ;  aliased(units:prefix_unit_symbol_formula, F, S, _)
+   (  aliased(units:any_unit_symbol(F, S))
+   ;  aliased(units:prefix_unit_symbol_formula(F, S, _))
    ).
 unit(U, S, F) :-
    (  unit_symbol_formula(U, S, F)

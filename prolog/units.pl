@@ -527,19 +527,14 @@ expand_either_factors(L1, R1, Type, L, Limit-N, L2, R2) :-
    ).
 select_factor(L1, R1, Type, L, N) -->
    select(A),
+   {ground(A)},
    expand_factors(Type, A),
    common_factors(L1, R1, Type, L, N).
 
 expand_factors(Type, A), Factors -->
    { expand_factor(Type, A, Factors) }.
 expand_factor(Type, Child-N, Factors) :-
-   (  alias(Child, Parent)
-   -> true
-   ;  Type == unit
-   -> unit(Child, _, Parent)
-   ;  Type == quantity,
-      child_quantity_parent(Child, Parent)
-   ),
+   call(Type, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
 
 replace_arg1(A, B, M:T1, M:T2) :-
@@ -681,7 +676,13 @@ common_quantity_(kind_of(Q1), Q2, Q) =>
 common_quantity_(Q1, kind_of(Q2), Q) =>
    common_quantity_(kind_of(Q2), Q1, Q).
 common_quantity_(Q1, Q2, Q) =>
-   common_expr(quantity, Q1, 1, Q2, 1, Q).
+   common_expr(alias_or_child_quantity_parent, Q1, 1, Q2, 1, Q).
+
+alias_or_child_quantity_parent(Child, Parent) :-
+   (  alias(Child, Parent),
+      aliased(units:quantity_parent(Parent, _))
+   ;  child_quantity_parent(Child, Parent)
+   ).
 
 same_kind(Q1, Q2), Q1 = Q2 => true.
 same_kind(Q1, Q2) =>
@@ -862,7 +863,8 @@ common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Uni
    NewFactor2 = 1,
    NewUnit = Unit2.
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) =>
-   common_expr(unit, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+   common_expr([Child, Parent]>>unit(Child, _, Parent),
+               Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 unit_origin_0(Unit, Origin) =>
    (  aliased(units:unit_origin(Unit, O))

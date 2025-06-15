@@ -101,6 +101,7 @@ select_(E, L, R) :-
    ).
 
 common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
+   debug(common_factors, "~p, ~p~n", [L1, L2]),
    exclude(ground, L1, Vars1),
    foldl(select_, Vars1, L2, _),
    exclude(ground, L2, Vars2),
@@ -137,106 +138,3 @@ expand_factors(ChildParentGoal, A), Factors -->
 expand_factor(ChildParentGoal, Child-N, Factors) :-
    call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
-
-:- begin_tests(iterative_deepening, [blocked(toto), setup((
-    nb_setval(id_test_recorded_depths, []), % Use nb_setval
-    nb_setval(id_test_exceed_counter, 0)    % Use nb_setval
-))]).
-
-% Helper predicates for testing iterative_deepening/2
-
-% Succeeds if CurrentDepth >= TargetDepth. Sets depth_limit_exceeded flag and fails otherwise.
-id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut) :-
-    (   CurrentDepthIn >= TargetDepth
-    ->  true
-    ;   nb_setarg(1, FlagOut, depth_limit_exceeded),
-        fail
-    ).
-
-% Always fails, without modifying the flag.
-id_test_always_fail(_CurrentDepthIn-_FlagOut) :-
-    fail.
-
-% Records CurrentDepthIn into nb_getval(id_test_recorded_depths, List).
-% Then behaves like id_test_succeed_if_deep_enough/2.
-id_test_record_depths_and_succeed(TargetDepth, CurrentDepthIn-FlagOut) :-
-    (   nb_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true % Use nb_getval
-    ;   CalledDepthsSoFar = [] % Initialize if not set (should be set by setup)
-    ),
-    (   is_list(CalledDepthsSoFar)
-    -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
-    ;   NewCalledDepths = [CurrentDepthIn] % Safety for non-list initial value
-    ),
-    nb_setval(id_test_recorded_depths, NewCalledDepths), % Use nb_setval
-    id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut).
-
-% If CurrentDepthIn >= TargetDepth, provides solutions Solution=s1 or Solution=s2.
-% Else, sets depth_limit_exceeded flag and fails.
-id_test_multi_solution_if_deep_enough(TargetDepth, Solution, CurrentDepthIn-FlagOut) :-
-    (   CurrentDepthIn >= TargetDepth
-    ->  (Solution = s1 ; Solution = s2)
-    ;   nb_setarg(1, FlagOut, depth_limit_exceeded),
-        fail
-    ).
-
-% Records CurrentDepthIn.
-% Signals depth_limit_exceeded for the first MaxExceeds calls (tracked by id_test_exceed_counter).
-% Fails normally on subsequent calls.
-id_test_exceed_n_times_then_fail(MaxExceeds, CurrentDepthIn-FlagOut) :-
-    (   nb_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true ; CalledDepthsSoFar = [] ), % Use nb_getval
-    (   is_list(CalledDepthsSoFar) -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
-    ;   NewCalledDepths = [CurrentDepthIn]
-    ),
-    nb_setval(id_test_recorded_depths, NewCalledDepths), % Use nb_setval
-
-    (   nb_getval(id_test_exceed_counter, Counter) -> true ; Counter = 0 ), % Use nb_getval
-    NewCounter is Counter + 1,
-    nb_setval(id_test_exceed_counter, NewCounter), % Use nb_setval
-    (   NewCounter =< MaxExceeds
-    ->  nb_setarg(1, FlagOut, depth_limit_exceeded),
-        fail
-    ;   fail % Fail normally
-    ).
-
-test(succeed_at_initial_limit) :-
-    call_with_time_limit(2, iterative_deepening(2, id_test_succeed_if_deep_enough(1))).
-
-test(succeed_at_exact_initial_limit) :-
-    call_with_time_limit(2, iterative_deepening(2, id_test_succeed_if_deep_enough(2))).
-
-test(succeed_after_one_increment, Deps == [1,2]) :-
-    nb_setval(id_test_recorded_depths, []), % Explicit reset
-    call_with_time_limit(2, iterative_deepening(1, id_test_record_depths_and_succeed(2))),
-    nb_getval(id_test_recorded_depths, Deps).
-
-test(succeed_after_multiple_increments, Deps == [1,2,3]) :-
-    nb_setval(id_test_recorded_depths, []), % Explicit reset
-    call_with_time_limit(2, iterative_deepening(1, id_test_record_depths_and_succeed(3))),
-    nb_getval(id_test_recorded_depths, Deps).
-
-test(fail_if_goal_always_fails_normally, [fail]) :-
-    call_with_time_limit(2, iterative_deepening(2, id_test_always_fail)).
-
-test(fail_if_goal_stops_exceeding_and_fails) :-
-    nb_setval(id_test_recorded_depths, []), % Explicit reset
-    nb_setval(id_test_exceed_counter, 0),   % Explicit reset
-    assertion(\+ call_with_time_limit(2, iterative_deepening(1, id_test_exceed_n_times_then_fail(2)))), % Assert that the call fails
-    nb_getval(id_test_recorded_depths, Deps),
-    assertion(Deps == [1,2,3]). % Assert the side-effect
-
-test(findall_multiple_solutions, Solutions == ExpectedSolutions) :-
-    findall(S, call_with_time_limit(2, iterative_deepening(1, id_test_multi_solution_if_deep_enough(2, S))), SolutionsList),
-    sort(SolutionsList, Solutions), % Sort to ensure order doesn't matter
-    ExpectedSolutions = [s1]. % Changed to expect only the first solution
-
-test(initial_limit_zero_succeed_target_zero, Deps == [0]) :-
-    nb_setval(id_test_recorded_depths, []), % Explicit reset
-    call_with_time_limit(2, iterative_deepening(0, id_test_record_depths_and_succeed(0))),
-    nb_getval(id_test_recorded_depths, Deps).
-
-test(initial_limit_zero_succeed_target_one, Deps == [0,1]) :-
-    nb_setval(id_test_recorded_depths, []), % Explicit reset
-    call_with_time_limit(2, iterative_deepening(0, id_test_record_depths_and_succeed(1))),
-    nb_getval(id_test_recorded_depths, Deps).
-
-:- end_tests(iterative_deepening).

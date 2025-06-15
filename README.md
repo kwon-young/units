@@ -76,6 +76,7 @@ Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
 
 > :warning: The same symbol can be used for multiple units in the library.
 > There are currently no mechanism to avoid name collision, so be extra careful when using them.
+> Known pitfall symbols: `ft` usually means foot, but can also mean `si:femto(si:tonne)`
 
 Quantities of the same kind can be added, subtracted and compared:
 

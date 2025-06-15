@@ -516,7 +516,7 @@ select_(E, L, R) :-
    ;  L = R
    ).
 
-common_factors(L1, R1, Type, L, N, L2, R2) :-
+common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
    exclude(ground, L1, Vars1),
    foldl(select_, Vars1, L2, _),
    exclude(ground, L2, Vars2),

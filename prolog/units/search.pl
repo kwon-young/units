@@ -1,6 +1,7 @@
 :- module(search, [common_expr/6, iterative_deepening/2]).
 
 :- use_module(utils).
+:- use_module('../units.pl').
 
 :- meta_predicate common_expr(2, +, ?, +, ?, -).
 
@@ -29,6 +30,7 @@
 %  @param Factor2 The numerical scaling factor associated with `Expr2` in the context of the common relationship.
 %  @param CommonExpr The common base expression derived from `Expr1` and `Expr2`.
 common_expr(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+    debug(common_expr, "~p", [common_expr(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit)]),
    common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 :- table common_expr_/6.
@@ -37,7 +39,7 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    parse_normalize_factors(Unit1, F1),
    parse_normalize_factors(Unit2, F2),
    once(iterative_deepening(1,
-      {F1, NewF1, ChildParentGoal, NewUnits, F2, NewF2}/[N]>>common_factors(
+      {F1, NewF1, ChildParentGoal, NewUnits, F2, NewF2}/[N]>>partition_factors(
          F1, NewF1, ChildParentGoal, NewUnits, N, F2, NewF2))),
    msort(NewUnits, SortedNewUnits),
    maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
@@ -87,7 +89,8 @@ iterative_deepening(Limit, Goal) :-
    ;  (  N = n(depth_limit_exceeded)
       -> Limit1 is Limit + 1,
          iterative_deepening(Limit1, Goal)
-      ;  fail
+      ;  debug(iterative_deepening, "Goal has failed", []),
+          fail
       )
    ).
 
@@ -99,6 +102,39 @@ select_(E, L, R) :-
    (  select(E, L, R)
    ;  L = R
    ).
+
+get_dimension(Type, U-E, Dim-(U-E)) :-
+    (   var(U)
+    -> Dim = var
+    ;   not_factor(U-E)
+    -> (   Type == units:unit_parent
+        ->  all_unit_kind(U**E, K)
+        ;   K = U**E
+        ),
+        quantity_dimensions(K, Dim)
+    ;   Dim = 1
+    ).
+get_dimensions(Type, L, D) :-
+    maplist(get_dimension(Type), L, D).
+
+partition_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
+    get_dimensions(ChildParentGoal, L1, G1),
+    get_dimensions(ChildParentGoal, L2, G2),
+    partition_factors_(G1, R1, ChildParentGoal, L, N, G2, R2).
+
+partition_factors_(L1, R1, ChildParentGoal, L, N, L2, R2) :-
+    (   select(Dim-F1, L1, L11),
+        selectchk(Dim-F2, L2, L22)
+    ->  common_factors([F1], R11, ChildParentGoal, LL, N, [F2], R22),
+        !,
+        append(R11, R111, R1),
+        append(R22, R222, R2),
+        append(LL, LLL, L),
+        partition_factors_(L11, R111, ChildParentGoal, LLL, N, L22, R222)
+    ;   pairs_values(L1, V1),
+        pairs_values(L2, V2),
+        common_factors(V1, R1, ChildParentGoal, L, N, V2, R2)
+    ).
 
 common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
    debug(common_factors, "~p, ~p~n", [L1, L2]),
@@ -117,7 +153,7 @@ common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
    append(Factor2, R22, R2),
    expand_either_factors(Unit1Only, R11, ChildParentGoal, R, N, Unit2Only, R22).
 expand_either_factors([], [], _, [], _-N, [], []) :-
-   setarg(1, N, no).
+   nb_setarg(1, N, no).
 expand_either_factors(L1, R1, ChildParentGoal, L, Limit-N, L2, R2) :-
    (  Limit > 0
    -> Limit1 is Limit - 1
@@ -131,10 +167,25 @@ select_factor(L1, R1, ChildParentGoal, L, N) -->
    select(A),
    {ground(A)},
    expand_factors(ChildParentGoal, A),
-   common_factors(L1, R1, ChildParentGoal, L, N).
+   partition_factors(L1, R1, ChildParentGoal, L, N).
 
 expand_factors(ChildParentGoal, A), Factors -->
    { expand_factor(ChildParentGoal, A, Factors) }.
 expand_factor(ChildParentGoal, Child-N, Factors) :-
    call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
+
+:- begin_tests(search, [setup(abolish_all_tables)]).
+
+test(partition_factors) :-
+    common_expr(units:unit_parent, si:metre, F1, usc:inch, F2, C),
+    F1 == 1,
+    F2 == 9144/(10000*3*12),
+    C == si:metre.
+
+test(partition_factors2) :-
+    common_expr(units:alias_or_child_quantity_parent,
+                isq:length/isq:time**2, 1, isq:acceleration, 1, C),
+    C == isq:length/isq:time**2.
+
+:- end_tests(search).

@@ -22,6 +22,7 @@
    quantity_character/2,
    quantity_formula/2,
    quantity_parent/2,
+   quantity_dimensions/2,
 
    absolute_point_origin/2,
    no_space_before_unit_symbol/1,
@@ -30,7 +31,8 @@
    unit_kind/2,
    unit_origin/2,
    unit_symbol/2,
-   unit_symbol_formula/3
+   unit_symbol_formula/3,
+   all_unit_kind/2
 ]).
 
 /** <module> units
@@ -1274,6 +1276,7 @@ test('acceleration') :-
    qeval(Duration is 8 * s),
    qeval(A is (Speed / Duration) as isq:acceleration),
    qeval(B is A in m/s**2),
+   qformat(B),
    must_be(isq:acceleration, B).
 
 test('clpBNR') :-

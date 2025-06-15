@@ -205,13 +205,13 @@ test(succeed_at_exact_initial_limit) :-
     iterative_deepening(2, id_test_succeed_if_deep_enough(2)).
 
 test(succeed_after_one_increment, Deps == [1,2]) :-
-    b_setval(id_test_recorded_depths, []),
-    iterative_deepening(1, id_test_record_depths_and_succeed(2, _DF)),
+    % b_setval for id_test_recorded_depths removed (handled by setup)
+    iterative_deepening(1, id_test_record_depths_and_succeed(2)),
     b_getval(id_test_recorded_depths, Deps).
 
 test(succeed_after_multiple_increments, Deps == [1,2,3]) :-
-    b_setval(id_test_recorded_depths, []),
-    iterative_deepening(1, id_test_record_depths_and_succeed(3, _DF)),
+    % b_setval for id_test_recorded_depths removed (handled by setup)
+    iterative_deepening(1, id_test_record_depths_and_succeed(3)),
     b_getval(id_test_recorded_depths, Deps).
 
 test(fail_if_goal_always_fails_normally, [fail]) :-

@@ -455,6 +455,30 @@ error:has_type(Quantity, Term) :-
 
 :- meta_predicate common_expr(2, +, ?, +, ?, -).
 
+%% common_expr(:Type, +Expr1, -Factor1, +Expr2, -Factor2, -CommonExpr) is nondet.
+%
+%  Finds a common base expression `CommonExpr` for two input expressions `Expr1` and
+%  `Expr2` (typically units or quantities), along with their respective scaling factors
+%  `Factor1` and `Factor2`.
+%
+%  The relationship established is that the term `Expr1*Factor1`,
+%  the term `Expr2*Factor2`, and the term `CommonExpr` are all considered equivalent.
+%
+%  This predicate is tabled to memoize its results.
+%  It employs an iterative deepening approach to search for the closest common ancestor
+%  of `Expr1` and `Expr2`.
+%  The search expands definitions (guided by the `Type` predicate,
+%  e.g., for unit parents or quantity parents) to establish this commonality.
+%
+%  @param Type A meta-argument (predicate name) that defines how to expand
+%              or find parents of elements within the expressions (e.g.,
+%              `unit_parent` for units, `alias_or_child_quantity_parent`
+%              for quantities).
+%  @param Expr1 The first input expression (e.g., `si:metre`, `isq:speed`).
+%  @param Factor1 The numerical scaling factor associated with `Expr1` in the context of the common relationship.
+%  @param Expr2 The second input expression.
+%  @param Factor2 The numerical scaling factor associated with `Expr2` in the context of the common relationship.
+%  @param CommonExpr The common base expression derived from `Expr1` and `Expr2`.
 common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    common_expr_(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 

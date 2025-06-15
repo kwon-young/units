@@ -139,8 +139,8 @@ expand_factor(ChildParentGoal, Child-N, Factors) :-
    parse_normalize_factors(Parent**N, Factors).
 
 :- begin_tests(iterative_deepening, [setup((
-    b_setval(id_test_recorded_depths, []),
-    b_setval(id_test_exceed_counter, 0)
+    nb_setval(id_test_recorded_depths, []), % Use nb_setval
+    nb_setval(id_test_exceed_counter, 0)    % Use nb_setval
 ))]).
 
 % Helper predicates for testing iterative_deepening/2
@@ -157,17 +157,17 @@ id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut) :-
 id_test_always_fail(_CurrentDepthIn-_FlagOut) :-
     fail.
 
-% Records CurrentDepthIn into b_getval(id_test_recorded_depths, List).
+% Records CurrentDepthIn into nb_getval(id_test_recorded_depths, List).
 % Then behaves like id_test_succeed_if_deep_enough/2.
 id_test_record_depths_and_succeed(TargetDepth, CurrentDepthIn-FlagOut) :-
-    (   b_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true
-    ;   CalledDepthsSoFar = [] % Initialize if not set
+    (   nb_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true % Use nb_getval
+    ;   CalledDepthsSoFar = [] % Initialize if not set (should be set by setup)
     ),
     (   is_list(CalledDepthsSoFar)
     -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
     ;   NewCalledDepths = [CurrentDepthIn] % Safety for non-list initial value
     ),
-    b_setval(id_test_recorded_depths, NewCalledDepths),
+    nb_setval(id_test_recorded_depths, NewCalledDepths), % Use nb_setval
     id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut).
 
 % If CurrentDepthIn >= TargetDepth, provides solutions Solution=s1 or Solution=s2.
@@ -183,15 +183,15 @@ id_test_multi_solution_if_deep_enough(TargetDepth, Solution, CurrentDepthIn-Flag
 % Signals depth_limit_exceeded for the first MaxExceeds calls (tracked by id_test_exceed_counter).
 % Fails normally on subsequent calls.
 id_test_exceed_n_times_then_fail(MaxExceeds, CurrentDepthIn-FlagOut) :-
-    (   b_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true ; CalledDepthsSoFar = [] ),
+    (   nb_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true ; CalledDepthsSoFar = [] ), % Use nb_getval
     (   is_list(CalledDepthsSoFar) -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
     ;   NewCalledDepths = [CurrentDepthIn]
     ),
-    b_setval(id_test_recorded_depths, NewCalledDepths),
+    nb_setval(id_test_recorded_depths, NewCalledDepths), % Use nb_setval
 
-    (   b_getval(id_test_exceed_counter, Counter) -> true ; Counter = 0 ),
+    (   nb_getval(id_test_exceed_counter, Counter) -> true ; Counter = 0 ), % Use nb_getval
     NewCounter is Counter + 1,
-    b_setval(id_test_exceed_counter, NewCounter),
+    nb_setval(id_test_exceed_counter, NewCounter), % Use nb_setval
     (   NewCounter =< MaxExceeds
     ->  nb_setarg(1, FlagOut, depth_limit_exceeded),
         fail

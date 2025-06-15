@@ -1,5 +1,7 @@
 :- module(search, [common_expr/6, iterative_deepening/2]).
 
+:- use_module(library(plunit)).
+:- use_module(library(lists)). % For append, member
 :- use_module(utils).
 
 :- meta_predicate common_expr(2, +, ?, +, ?, -).
@@ -137,3 +139,101 @@ expand_factors(ChildParentGoal, A), Factors -->
 expand_factor(ChildParentGoal, Child-N, Factors) :-
    call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
+
+% Helper predicates for testing iterative_deepening/2
+
+% Succeeds if CurrentDepth >= TargetDepth. Sets depth_limit_exceeded flag and fails otherwise.
+id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut) :-
+    (   CurrentDepthIn >= TargetDepth
+    ->  true
+    ;   nb_setarg(1, FlagOut, depth_limit_exceeded),
+        fail
+    ).
+
+% Always fails, without modifying the flag.
+id_test_always_fail(_CurrentDepthIn-_FlagOut) :-
+    fail.
+
+% Records CurrentDepthIn into b_getval(id_test_recorded_depths, List).
+% Then behaves like id_test_succeed_if_deep_enough/2.
+id_test_record_depths_and_succeed(TargetDepth, CurrentDepthIn-FlagOut) :-
+    (   b_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true
+    ;   CalledDepthsSoFar = [] % Initialize if not set
+    ),
+    (   is_list(CalledDepthsSoFar) -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
+    ;   NewCalledDepths = [CurrentDepthIn] % Safety for non-list initial value
+    ),
+    b_setval(id_test_recorded_depths, NewCalledDepths),
+    id_test_succeed_if_deep_enough(TargetDepth, CurrentDepthIn-FlagOut).
+
+% If CurrentDepthIn >= TargetDepth, provides solutions Solution=s1 or Solution=s2.
+% Else, sets depth_limit_exceeded flag and fails.
+id_test_multi_solution_if_deep_enough(TargetDepth, Solution, CurrentDepthIn-FlagOut) :-
+    (   CurrentDepthIn >= TargetDepth
+    ->  (Solution = s1 ; Solution = s2)
+    ;   nb_setarg(1, FlagOut, depth_limit_exceeded),
+        fail
+    ).
+
+% Records CurrentDepthIn.
+% Signals depth_limit_exceeded for the first MaxExceeds calls (tracked by id_test_exceed_counter).
+% Fails normally on subsequent calls.
+id_test_exceed_n_times_then_fail(MaxExceeds, CurrentDepthIn-FlagOut) :-
+    (   b_getval(id_test_recorded_depths, CalledDepthsSoFar) -> true ; CalledDepthsSoFar = [] ),
+    (   is_list(CalledDepthsSoFar) -> append(CalledDepthsSoFar, [CurrentDepthIn], NewCalledDepths)
+    ;   NewCalledDepths = [CurrentDepthIn]
+    ),
+    b_setval(id_test_recorded_depths, NewCalledDepths),
+
+    (   b_getval(id_test_exceed_counter, Counter) -> true ; Counter = 0 ),
+    NewCounter is Counter + 1,
+    b_setval(id_test_exceed_counter, NewCounter),
+    (   NewCounter =< MaxExceeds
+    ->  nb_setarg(1, FlagOut, depth_limit_exceeded),
+        fail
+    ;   fail % Fail normally
+    ).
+
+:- begin_tests(iterative_deepening, [setup((b_setval(id_test_recorded_depths, []), b_setval(id_test_exceed_counter, 0)))]).
+
+test(succeed_at_initial_limit) :-
+    iterative_deepening(2, id_test_succeed_if_deep_enough(1, DF)).
+
+test(succeed_at_exact_initial_limit) :-
+    iterative_deepening(2, id_test_succeed_if_deep_enough(2, DF)).
+
+test(succeed_after_one_increment, Deps == [1,2]) :-
+    b_setval(id_test_recorded_depths, []),
+    iterative_deepening(1, id_test_record_depths_and_succeed(2, DF)),
+    b_getval(id_test_recorded_depths, Deps).
+
+test(succeed_after_multiple_increments, Deps == [1,2,3]) :-
+    b_setval(id_test_recorded_depths, []),
+    iterative_deepening(1, id_test_record_depths_and_succeed(3, DF)),
+    b_getval(id_test_recorded_depths, Deps).
+
+test(fail_if_goal_always_fails_normally, [fail]) :-
+    iterative_deepening(2, id_test_always_fail(DF)).
+
+test(fail_if_goal_stops_exceeding_and_fails, [fail, Deps == [1,2,3]]) :-
+    b_setval(id_test_recorded_depths, []),
+    b_setval(id_test_exceed_counter, 0),
+    iterative_deepening(1, id_test_exceed_n_times_then_fail(2, DF)), % Exceeds for depth 1, 2. Fails normally for depth 3.
+    b_getval(id_test_recorded_depths, Deps). % Should have been called for depths 1, 2, and 3
+
+test(findall_multiple_solutions, Solutions == ExpectedSolutions) :-
+    findall(S, iterative_deepening(1, id_test_multi_solution_if_deep_enough(2, S, DF)), SolutionsList),
+    sort(SolutionsList, Solutions), % Sort to ensure order doesn't matter
+    ExpectedSolutions = [s1, s2].
+
+test(initial_limit_zero_succeed_target_zero, Deps == [0]) :-
+    b_setval(id_test_recorded_depths, []),
+    iterative_deepening(0, id_test_record_depths_and_succeed(0, DF)),
+    b_getval(id_test_recorded_depths, Deps).
+
+test(initial_limit_zero_succeed_target_one, Deps == [0,1]) :-
+    b_setval(id_test_recorded_depths, []),
+    iterative_deepening(0, id_test_record_depths_and_succeed(1, DF)),
+    b_getval(id_test_recorded_depths, Deps).
+
+:- end_tests(iterative_deepening).

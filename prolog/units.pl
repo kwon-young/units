@@ -455,7 +455,7 @@ error:has_type(Quantity, Term) :-
 
 :- meta_predicate common_expr(2, +, ?, +, ?, -).
 
-%% common_expr(:Type, +Expr1, -Factor1, +Expr2, -Factor2, -CommonExpr) is nondet.
+%% common_expr(:ChildParentGoal, +Expr1, -Factor1, +Expr2, -Factor2, -CommonExpr) is nondet.
 %
 %  Finds a common base expression `CommonExpr` for two input expressions `Expr1` and
 %  `Expr2` (typically units or quantities), along with their respective scaling factors
@@ -467,10 +467,10 @@ error:has_type(Quantity, Term) :-
 %  This predicate is tabled to memoize its results.
 %  It employs an iterative deepening approach to search for the closest common ancestor
 %  of `Expr1` and `Expr2`.
-%  The search expands definitions (guided by the `Type` predicate,
+%  The search expands definitions (guided by the `ChildParentGoal` predicate,
 %  e.g., for unit parents or quantity parents) to establish this commonality.
 %
-%  @param Type A meta-argument (predicate name) that defines how to expand
+%  @param ChildParentGoal A meta-argument (predicate name) that defines how to expand
 %              or find parents of elements within the expressions (e.g.,
 %              `unit_parent` for units, `alias_or_child_quantity_parent`
 %              for quantities).
@@ -479,17 +479,17 @@ error:has_type(Quantity, Term) :-
 %  @param Expr2 The second input expression.
 %  @param Factor2 The numerical scaling factor associated with `Expr2` in the context of the common relationship.
 %  @param CommonExpr The common base expression derived from `Expr1` and `Expr2`.
-common_expr(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
-   common_expr_(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
+common_expr(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+   common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 :- table common_expr_/6.
 
-common_expr_(Type, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
+common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    parse_normalize_factors(Unit1, F1),
    parse_normalize_factors(Unit2, F2),
    once(iterative_deepening(1,
-      {F1, NewF1, Type, NewUnits, F2, NewF2}/[N]>>common_factors(
-         F1, NewF1, Type, NewUnits, N, F2, NewF2))),
+      {F1, NewF1, ChildParentGoal, NewUnits, F2, NewF2}/[N]>>common_factors(
+         F1, NewF1, ChildParentGoal, NewUnits, N, F2, NewF2))),
    msort(NewUnits, SortedNewUnits),
    maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
            [NewFactor1, NewFactor2, NewUnit]),
@@ -530,28 +530,28 @@ common_factors(L1, R1, Type, L, N, L2, R2) :-
    append(CommonUnits, R, L),
    append(Factor1, R11, R1),
    append(Factor2, R22, R2),
-   expand_either_factors(Unit1Only, R11, Type, R, N, Unit2Only, R22).
+   expand_either_factors(Unit1Only, R11, ChildParentGoal, R, N, Unit2Only, R22).
 expand_either_factors([], [], _, [], _-N, [], []) :-
    setarg(1, N, no).
-expand_either_factors(L1, R1, Type, L, Limit-N, L2, R2) :-
+expand_either_factors(L1, R1, ChildParentGoal, L, Limit-N, L2, R2) :-
    (  Limit > 0
    -> Limit1 is Limit - 1
    ;  nb_setarg(1, N, depth_limit_exceeded),
       fail
    ),
-   (  phrase(select_factor(L1, R1, Type, L, Limit1-N), L2, R2)
-   ;  phrase(select_factor(L2, R2, Type, L, Limit1-N), L1, R1)
+   (  phrase(select_factor(L1, R1, ChildParentGoal, L, Limit1-N), L2, R2)
+   ;  phrase(select_factor(L2, R2, ChildParentGoal, L, Limit1-N), L1, R1)
    ).
-select_factor(L1, R1, Type, L, N) -->
+select_factor(L1, R1, ChildParentGoal, L, N) -->
    select(A),
    {ground(A)},
-   expand_factors(Type, A),
-   common_factors(L1, R1, Type, L, N).
+   expand_factors(ChildParentGoal, A),
+   common_factors(L1, R1, ChildParentGoal, L, N).
 
-expand_factors(Type, A), Factors -->
-   { expand_factor(Type, A, Factors) }.
-expand_factor(Type, Child-N, Factors) :-
-   call(Type, Child, Parent),
+expand_factors(ChildParentGoal, A), Factors -->
+   { expand_factor(ChildParentGoal, A, Factors) }.
+expand_factor(ChildParentGoal, Child-N, Factors) :-
+   call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
 
 replace_arg1(A, B, M:T1, M:T2) :-

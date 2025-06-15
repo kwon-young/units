@@ -66,6 +66,12 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
 %  This predicate is useful for searches where the solution depth is unknown.
 %  It is also useful when a breadth-first-like exploration is desired without its memory overhead.
 %
+%  Note: This predicate differs from the standard `call_with_depth_limit/3`.
+%  `call_with_depth_limit/3` typically fails or throws an error when the depth limit is reached.
+%  In contrast, `iterative_deepening/2` expects the `Goal` to unify its `Flag` argument
+%  to indicate that the depth limit was a factor in its failure.
+%  This allows `iterative_deepening/2` to systematically increase the limit and retry the `Goal`.
+%
 %  @param InitialLimit The starting depth limit for the search.
 %  @param Goal The goal to execute.
 %              It must be a predicate accepting a `Limit-Flag` pair as an argument.

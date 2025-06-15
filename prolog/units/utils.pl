@@ -6,7 +6,9 @@
    generate_expression/2,
    mapexpr1/3,
    mapexpr/3,
-   mapexpr/4
+   mapexpr/4,
+   aliased/1,
+   lazy/2
 ]).
 
 :- use_module(library(yall)).
@@ -302,6 +304,31 @@ mapexpr(Goal, Failure, A, A1) =>
    *-> true
    ;  call(Failure, A, A1)
    ).
+
+replace_arg1(A, B, M:T1, M:T2) :-
+   T1 =.. [F, A | Args],
+   T2 =.. [F, B | Args].
+
+:- meta_predicate aliased(0).
+
+aliased(Goal) :-
+   aliased_(Goal).
+
+:- table aliased_/1.
+
+aliased_(Goal) :-
+   call(Goal).
+aliased_(Goal) :-
+   replace_arg1(A, B, Goal, Goal1),
+   alias(A, B),
+   aliased_(Goal1).
+
+:- meta_predicate lazy(0, ?).
+
+lazy(Goal, Cond), \+ ground(Cond) =>
+   when(ground(Cond), Goal).
+lazy(Goal, _) =>
+   call(Goal).
 
 :- begin_tests(utils).
 

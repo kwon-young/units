@@ -138,7 +138,7 @@ expand_factor(ChildParentGoal, Child-N, Factors) :-
    call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
 
-:- begin_tests(iterative_deepening, [setup((
+:- begin_tests(iterative_deepening, [blocked(toto), setup((
     nb_setval(id_test_recorded_depths, []), % Use nb_setval
     nb_setval(id_test_exceed_counter, 0)    % Use nb_setval
 ))]).

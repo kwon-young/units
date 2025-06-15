@@ -199,43 +199,43 @@ id_test_exceed_n_times_then_fail(MaxExceeds, CurrentDepthIn-FlagOut) :-
     ).
 
 test(succeed_at_initial_limit) :-
-    iterative_deepening(2, id_test_succeed_if_deep_enough(1)).
+    call_with_time_limit(2, iterative_deepening(2, id_test_succeed_if_deep_enough(1))).
 
 test(succeed_at_exact_initial_limit) :-
-    iterative_deepening(2, id_test_succeed_if_deep_enough(2)).
+    call_with_time_limit(2, iterative_deepening(2, id_test_succeed_if_deep_enough(2))).
 
 test(succeed_after_one_increment, Deps == [1,2]) :-
     % b_setval for id_test_recorded_depths removed (handled by setup)
-    iterative_deepening(1, id_test_record_depths_and_succeed(2)),
+    call_with_time_limit(2, iterative_deepening(1, id_test_record_depths_and_succeed(2))),
     b_getval(id_test_recorded_depths, Deps).
 
 test(succeed_after_multiple_increments, Deps == [1,2,3]) :-
     % b_setval for id_test_recorded_depths removed (handled by setup)
-    iterative_deepening(1, id_test_record_depths_and_succeed(3)),
+    call_with_time_limit(2, iterative_deepening(1, id_test_record_depths_and_succeed(3))),
     b_getval(id_test_recorded_depths, Deps).
 
 test(fail_if_goal_always_fails_normally, [fail]) :-
-    iterative_deepening(2, id_test_always_fail).
+    call_with_time_limit(2, iterative_deepening(2, id_test_always_fail)).
 
 test(fail_if_goal_stops_exceeding_and_fails) :- % Removed [fail, Deps == ...] options
     % Setup ensures id_test_recorded_depths and id_test_exceed_counter are reset
-    assertion(\+ iterative_deepening(1, id_test_exceed_n_times_then_fail(2))), % Assert that the call fails
+    assertion(\+ call_with_time_limit(2, iterative_deepening(1, id_test_exceed_n_times_then_fail(2)))), % Assert that the call fails
     b_getval(id_test_recorded_depths, Deps),
     assertion(Deps == [1,2,3]). % Assert the side-effect
 
 test(findall_multiple_solutions, Solutions == ExpectedSolutions) :-
-    findall(S, iterative_deepening(1, id_test_multi_solution_if_deep_enough(2, S)), SolutionsList),
+    findall(S, call_with_time_limit(2, iterative_deepening(1, id_test_multi_solution_if_deep_enough(2, S))), SolutionsList),
     sort(SolutionsList, Solutions), % Sort to ensure order doesn't matter
     ExpectedSolutions = [s1, s2].
 
 test(initial_limit_zero_succeed_target_zero, Deps == [0]) :-
     % b_setval for id_test_recorded_depths removed (handled by setup)
-    iterative_deepening(0, id_test_record_depths_and_succeed(0)),
+    call_with_time_limit(2, iterative_deepening(0, id_test_record_depths_and_succeed(0))),
     b_getval(id_test_recorded_depths, Deps).
 
 test(initial_limit_zero_succeed_target_one, Deps == [0,1]) :-
     % b_setval for id_test_recorded_depths removed (handled by setup)
-    iterative_deepening(0, id_test_record_depths_and_succeed(1)),
+    call_with_time_limit(2, iterative_deepening(0, id_test_record_depths_and_succeed(1))),
     b_getval(id_test_recorded_depths, Deps).
 
 :- end_tests(iterative_deepening).

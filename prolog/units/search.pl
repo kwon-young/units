@@ -30,7 +30,6 @@
 %  @param Factor2 The numerical scaling factor associated with `Expr2` in the context of the common relationship.
 %  @param CommonExpr The common base expression derived from `Expr1` and `Expr2`.
 common_expr(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
-    debug(common_expr, "~p", [common_expr(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit)]),
    common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit).
 
 :- table common_expr_/6.
@@ -43,8 +42,7 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
          F1, NewF1, ChildParentGoal, NewUnits, N, F2, NewF2))),
    msort(NewUnits, SortedNewUnits),
    maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
-           [NewFactor1, NewFactor2, NewUnit]),
-   debug(common_expr, "~p*~p = ~p*~p = ~p~n", [Unit1, NewFactor1, Unit2, NewFactor2, NewUnit]).
+           [NewFactor1, NewFactor2, NewUnit]).
 
 :- meta_predicate iterative_deepening(+, 1).
 
@@ -82,15 +80,13 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
 %              It must be a predicate accepting a `Limit-Flag` pair as an argument.
 %              `Flag` is `n(Status)` used to signal if the depth limit was hit.
 iterative_deepening(Limit, Goal) :-
-   debug(iterative_deepening, "Depth ~p~n", [Limit]),
    N = n(no),
    (  call(Goal, Limit-N)
    -> true
    ;  (  N = n(depth_limit_exceeded)
       -> Limit1 is Limit + 1,
          iterative_deepening(Limit1, Goal)
-      ;  debug(iterative_deepening, "Goal has failed", []),
-          fail
+      ;  fail
       )
    ).
 
@@ -137,7 +133,6 @@ partition_factors_(L1, R1, ChildParentGoal, L, N, L2, R2) :-
     ).
 
 common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
-   debug(common_factors, "~p, ~p~n", [L1, L2]),
    exclude(ground, L1, Vars1),
    foldl(select_, Vars1, L2, _),
    exclude(ground, L2, Vars2),

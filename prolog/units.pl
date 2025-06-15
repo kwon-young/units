@@ -1417,10 +1417,6 @@ test(has_type_fail_example, [error(type_error(isq:time, _))]) :-
    must_be(isq:time, X_len).
 
 test(slow_conversion, []) :-
-   debug(iterative_deepening),
-   debug(common_factors),
-   open("/tmp/quick.log", write, S),
-   with_output_to(S, qeval(_X*foot*lbf/s =:= 1*watt), [capture([user_error])]),
-   close(S).
+   qeval(_X*foot*lbf/s =:= 1*watt).
 
 :- end_tests(units).

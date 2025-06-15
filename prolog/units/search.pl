@@ -46,6 +46,28 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
 
 :- meta_predicate iterative_deepening(+, 1).
 
+%% iterative_deepening(+InitialLimit, :Goal) is nondet.
+%
+%  Executes `Goal` using an iterative deepening search strategy.
+%
+%  `Goal` is a meta-predicate that is expected to take an additional argument,
+%  `DepthLimit-Flag`, where `DepthLimit` is the current maximum search depth and
+%  `Flag` is a term `n(Status)`. `Goal` should unify `Status` with `depth_limit_exceeded`
+%  if it fails due to reaching `DepthLimit`.
+%
+%  `iterative_deepening/2` starts by calling `Goal` with `InitialLimit`.
+%  If `Goal` succeeds, `iterative_deepening/2` succeeds.
+%  If `Goal` fails and `Status` is `depth_limit_exceeded`, the `Limit` is incremented,
+%  and `Goal` is called again with the new `Limit`.
+%  This process repeats until `Goal` succeeds or fails for a reason other than
+%  `depth_limit_exceeded`.
+%
+%  This predicate is useful for searches where the solution depth is unknown and
+%  a breadth-first-like exploration is desired without its memory overhead.
+%
+%  @param InitialLimit The starting depth limit for the search.
+%  @param Goal The goal to execute. It must be a predicate accepting a `Limit-Flag` pair
+%              as an argument, where `Flag` is `n(Status)` used to signal if the depth limit was hit.
 iterative_deepening(Limit, Goal) :-
    debug(iterative_deepening, "Depth ~p~n", [Limit]),
    N = n(no),

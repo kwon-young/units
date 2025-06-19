@@ -3,7 +3,7 @@
 :- use_module(utils).
 :- use_module('../units.pl').
 
-:- meta_predicate common_expr(2, +, ?, +, ?, -).
+:- meta_predicate common_expr(2, +, -, +, -, -).
 
 %% common_expr(:ChildParentGoal, +Expr1, -Factor1, +Expr2, -Factor2, -CommonExpr) is nondet.
 %
@@ -11,8 +11,7 @@
 %  `Expr2` (typically units or quantities), along with their respective scaling factors
 %  `Factor1` and `Factor2`.
 %
-%  The relationship established is that the term `Expr1*Factor1`,
-%  the term `Expr2*Factor2`, and the term `CommonExpr` are all considered equivalent.
+%  The relationship established is that `Expr1*Factor1 = Expr2*Factor2 = CommonExpr`.
 %
 %  This predicate is tabled to memoize its results.
 %  It employs an iterative deepening approach to search for the closest common ancestor
@@ -40,7 +39,7 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
    once(iterative_deepening(1,
       {F1, NewF1, ChildParentGoal, NewUnits, F2, NewF2}/[N]>>partition_factors(
          F1, NewF1, ChildParentGoal, NewUnits, N, F2, NewF2))),
-   msort(NewUnits, SortedNewUnits),
+   normalize_factors(NewUnits, SortedNewUnits),
    maplist(generate_expression, [NewF1, NewF2, SortedNewUnits],
            [NewFactor1, NewFactor2, NewUnit]).
 
@@ -50,30 +49,17 @@ common_expr_(ChildParentGoal, Unit1, NewFactor1, Unit2, NewFactor2, NewUnit) :-
 %
 %  Executes `Goal` using an iterative deepening search strategy.
 %
-%  `Goal` is a meta-predicate.
-%  It is expected to take an additional argument, `DepthLimit-Flag`.
-%  `DepthLimit` is the current maximum search depth.
-%  `Flag` is a term `n(Status)`.
-%  `Goal` should unify `Status` with `depth_limit_exceeded` if it fails due to reaching `DepthLimit`.
+%  `Goal` is expected to take an additional argument, `DepthLimit-Flag` where
+%  `DepthLimit` is the maximum search depth and `Flag` is a term `n(Status)`.
+%  `Goal` should set (with `nb_set/2`) `Status` to `depth_limit_exceeded` 
+%  if it fails due to reaching `DepthLimit`.
+%  In this case, `Goal` is called again with `DepthLimit + 1`.
+%  If `Goal`, this predicate fails.
 %
-%  `iterative_deepening/2` starts by calling `Goal` with `InitialLimit`.
-%  If `Goal` succeeds, `iterative_deepening/2` succeeds.
-%  If `Goal` fails and `Status` is `depth_limit_exceeded`, the `Limit` is incremented.
-%  Then, `Goal` is called again with the new `Limit`.
-%  This process repeats until `Goal` succeeds.
-%  Or it repeats until `Goal` fails for a reason other than `depth_limit_exceeded`.
-%
-%  This predicate is useful for searches where the solution depth is unknown.
-%  It is also useful when a breadth-first-like exploration is desired without its memory overhead.
-%
-%  Note: This predicate implements its own depth-limiting and iteration mechanism
-%  rather than using the standard `call_with_depth_limit/3`.
-%  This is because `iterative_deepening/2` requires the `Goal` to actively participate
-%  in the depth management by unifying a flag when the depth limit is reached.
-%  This allows the `Goal` to explore all possibilities within the current depth
-%  before `iterative_deepening/2` decides to increment the limit and retry.
-%  Standard `call_with_depth_limit/3` typically causes the goal to fail or throw an
-%  exception upon reaching the limit, which would not allow for this controlled iteration.
+%  Note: We don't use `call_with_depth_limit/2` because the use of exception to
+%  signal that the depth limit is reached will cut existing choice points
+%  which should be explored.
+%  Moreover, `Goal` is free to count depth level freely.
 %
 %  @param InitialLimit The starting depth limit for the search.
 %  @param Goal The goal to execute.
@@ -170,7 +156,7 @@ expand_factor(ChildParentGoal, Child-N, Factors) :-
    call(ChildParentGoal, Child, Parent),
    parse_normalize_factors(Parent**N, Factors).
 
-:- begin_tests(search, [setup(abolish_all_tables)]).
+:- begin_tests(search, [timeout(1), setup(abolish_all_tables)]).
 
 test(partition_factors) :-
     common_expr(units:unit_parent, si:metre, F1, usc:inch, F2, C),
@@ -182,5 +168,20 @@ test(partition_factors2) :-
     common_expr(units:alias_or_child_quantity_parent,
                 isq:length/isq:time**2, 1, isq:acceleration, 1, C),
     C == isq:length/isq:time**2.
+
+test(common_expr_var) :-
+    common_expr(units:unit_parent, si:metre/T, F1, usc:inch/si:hour, F2, C),
+    T = si:hour,
+    F1 == 1,
+    F2 == 9144/(10000*3*12),
+    C == si:metre/si:hour.
+
+test(common_expr_hard) :-
+    common_expr(units:unit_parent,
+                usc:foot*usc:pound_force/si:second, F1,
+                si:watt, F2, C),
+    F1 == 9144*45359237*980665/(10000*3*100000000*100000),
+    F2 == 1,
+    C == si:kilogram*si:metre**2/si:second**3.
 
 :- end_tests(search).

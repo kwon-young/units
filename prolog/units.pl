@@ -456,7 +456,6 @@ error:has_type(Quantity, Term) :-
    ),
    implicitly_convertible(Q, Quantity).
 
-
 base_quantity(Quantity) :-
    quantity_parent(Quantity, Dimension),
    dimension_symbol(Dimension, _).
@@ -497,15 +496,14 @@ root_kind(Quantity) :-
 
 quantity_kind(kind_of(Kind), Kind).
 quantity_kind(Kind, Kind) :-
-   root_kind(Kind).
+   root_kind(Kind), !.
 quantity_kind(Quantity, Kind) :-
-   (  alias(Quantity, Parent)
-   ;  child_quantity_parent(Quantity, Parent)
-   ),
+   alias_or_child_quantity_parent(Quantity, Parent),
    quantity_kind(Parent, Kind).
 
-derived_quantity_kind(Quantity, Kind) :-
-   mapexpr(quantity_kind, [_, _]>>fail, Quantity, Kind).
+derived_quantity_kind(Quantity, NormalizedKind) :-
+   mapexpr(quantity_kind, [_, _]>>fail, Quantity, Kind),
+   normalize(Kind, NormalizedKind).
 
 :- table quantity_dimensions/2.
 
@@ -592,47 +590,52 @@ same_kind(Q1, Q2) =>
    -> true
    ).
 
-%  From is implicitly convertible to To if:
-%  
-%  * From is a direct descendent of To: i.e. common_quantity(From, To, To)
-%  * 
+% From is implicitly convertible to To if From is a direct descendant of To
+% meaning: common_quantity(From, To, To).
 %
-%  Exceptions:
+% additionally, if To is a kind_of, From can be part of the subtree of To.
+% meaning: common_quantity(From, To, From).
 %
-%  * if To is a kind_of, then common_quantity(From, To, From)
-%
-%
-implicitly_convertible(From, To, Explicit) :-
+% moreover, the conversion of From to To should not cross a kind.
+% i.e. the kind of From should be a direct ancestor of To.
+% meaning: quantity_kind(From, K), kind(K), common_quantity(K, To, K)
+implicitly_convertible_(From, To) :-
    normalize(To, NormalizedTo),
    mapexpr(alias, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
    (  AliasNormalizedTo = kind_of(_), CommonQuantity = From
    ;  CommonQuantity = AliasNormalizedTo
    ),
-   (  Explicit == false, quantity_kind(From, FromKind), kind(FromKind)
-   -> common_quantity(FromKind, AliasNormalizedTo, FromKind)
-   ;  true
+   derived_quantity_kind(From, FromKind),
+   mapexpr1(
+      kind,
+      {AliasNormalizedTo}/[F]>>common_quantity(F, AliasNormalizedTo, F),
+      [_]>>true,
+      FromKind
    ),
    !.
-implicitly_convertible(From, ToKind, Explicit) :-
+% From can be implicitly converted to a kind To if From can be implicitly
+% converted to the parent formula of the kind To.
+% In this case, the formula becomes a common ancestor of From to To and
+% From and To can not be directly related.
+% But, same as above, conversion of From to To should not cross a kind
+implicitly_convertible_(From, ToKind) :-
    root_kind(ToKind),
    aliased(child_quantity_parent(ToKind, Formula)),
-   implicitly_convertible(From, Formula, Explicit),
+   implicitly_convertible(From, Formula),
    derived_quantity_kind(From, FromKind),
-   normalize(FromKind, NormalizedFromKind),
-   common_quantity(NormalizedFromKind, ToKind, CommonKind),
-   (  (CommonKind == NormalizedFromKind ; CommonKind == ToKind)
-   -> true
-   ),
+   common_quantity(FromKind, ToKind, FromKind),
    !.
-implicitly_convertible(From, To, _) :-
+% From can be implicitly converted to To if there is a formula for it
+% and From is implicitly convertible to the formula.
+implicitly_convertible_(From, To) :-
    alias_quantity_formula(To, Formula),
    implicitly_convertible(From, Formula).
 
 implicitly_convertible(From, To), unifiable(From, To, _) =>
    From = To.
 implicitly_convertible(From, To) =>
-   implicitly_convertible(From, To, false).
+   implicitly_convertible_(From, To).
 
 explicitly_convertible(From, To), unifiable(From, To, _) =>
    From = To.
@@ -642,9 +645,9 @@ explicitly_convertible(From, To) =>
 :- table explicitly_convertible_/2.
 
 explicitly_convertible_(From, To) :-
-   implicitly_convertible(From, To, true).
+   implicitly_convertible_(From, To).
 explicitly_convertible_(From, To) :-
-   implicitly_convertible(To, From, true).
+   implicitly_convertible_(To, From).
 
 any_unit_symbol(Unit, Symbol) :-
    (  unit_symbol(Unit, Symbol)

@@ -5,6 +5,7 @@
    parse_normalize_factors/2,
    generate_expression/2,
    mapexpr1/3,
+   mapexpr1/4,
    mapexpr/3,
    mapexpr/4,
    aliased/1,
@@ -260,6 +261,21 @@ mapexpr1(Goal, F, A**_) =>
 mapexpr1(Goal, Failure, A) =>
    (  call(Goal, A)
    *-> true
+   ;  call(Failure, A)
+   ).
+
+:- meta_predicate mapexpr1(1, 1, 1, ?).
+mapexpr1(Cond, Goal, F, A*B) =>
+   mapexpr1(Cond, Goal, F, A),
+   mapexpr1(Cond, Goal, F, B).
+mapexpr1(Cond, Goal, F, A/B) =>
+   mapexpr1(Cond, Goal, F, A),
+   mapexpr1(Cond, Goal, F, B).
+mapexpr1(Cond, Goal, F, A**_) =>
+   mapexpr1(Cond, Goal, F, A).
+mapexpr1(Cond, Goal, Failure, A) =>
+   (  call(Cond, A)
+   -> call(Goal, A)
    ;  call(Failure, A)
    ).
 

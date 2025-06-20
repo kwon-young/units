@@ -548,11 +548,10 @@ simplify_dimension_pairs -->
 is_inverse(Q-N1, Q-N2) :-
    N2 is -N1.
 
+common_quantity(Q, Q, Q) :- !.
 common_quantity(Q1, Q2, Q) :-
    same_dimension(Q1, Q2),
    common_quantity_(Q1, Q2, Q).
-common_quantity_(Q1, Q2, Q), Q1=Q2 =>
-   Q2 = Q.
 common_quantity_(kind_of(Q1), kind_of(Q2), Q) =>
    simplify_dimensions(Q1, K1),
    simplify_dimensions(Q2, K2),
@@ -590,6 +589,7 @@ same_kind(Q1, Q2) =>
    -> true
    ).
 
+implicitly_convertible(Q, Q) :- !.
 % From is implicitly convertible to To if From is a direct descendant of To
 % meaning: common_quantity(From, To, To).
 %
@@ -599,12 +599,14 @@ same_kind(Q1, Q2) =>
 % moreover, the conversion of From to To should not cross a kind.
 % i.e. the kind of From should be a direct ancestor of To.
 % meaning: quantity_kind(From, K), kind(K), common_quantity(K, To, K)
-implicitly_convertible_(From, To) :-
+implicitly_convertible(From, To) :-
+   % normalizing + dealiasing is necessary for unification check
    normalize(To, NormalizedTo),
    mapexpr(alias, NormalizedTo, AliasNormalizedTo),
    common_quantity(From, AliasNormalizedTo, CommonQuantity),
    (  AliasNormalizedTo = kind_of(_), CommonQuantity = From
-   ;  CommonQuantity = AliasNormalizedTo
+   ;  % unification check here
+      CommonQuantity = AliasNormalizedTo
    ),
    derived_quantity_kind(From, FromKind),
    mapexpr1(
@@ -619,7 +621,7 @@ implicitly_convertible_(From, To) :-
 % In this case, the formula becomes a common ancestor of From to To and
 % From and To can not be directly related.
 % But, same as above, conversion of From to To should not cross a kind
-implicitly_convertible_(From, ToKind) :-
+implicitly_convertible(From, ToKind) :-
    root_kind(ToKind),
    aliased(child_quantity_parent(ToKind, Formula)),
    implicitly_convertible(From, Formula),
@@ -628,26 +630,14 @@ implicitly_convertible_(From, ToKind) :-
    !.
 % From can be implicitly converted to To if there is a formula for it
 % and From is implicitly convertible to the formula.
-implicitly_convertible_(From, To) :-
+implicitly_convertible(From, To) :-
    alias_quantity_formula(To, Formula),
    implicitly_convertible(From, Formula).
 
-implicitly_convertible(From, To), unifiable(From, To, _) =>
-   From = To.
-implicitly_convertible(From, To) =>
-   implicitly_convertible_(From, To).
-
-explicitly_convertible(From, To), unifiable(From, To, _) =>
-   From = To.
-explicitly_convertible(From, To) =>
-   explicitly_convertible_(From, To).
-
-:- table explicitly_convertible_/2.
-
-explicitly_convertible_(From, To) :-
-   implicitly_convertible_(From, To).
-explicitly_convertible_(From, To) :-
-   implicitly_convertible_(To, From).
+explicitly_convertible(From, To) :-
+   implicitly_convertible(From, To), !.
+explicitly_convertible(From, To) :-
+   implicitly_convertible(To, From).
 
 any_unit_symbol(Unit, Symbol) :-
    (  unit_symbol(Unit, Symbol)

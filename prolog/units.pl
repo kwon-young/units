@@ -552,11 +552,15 @@ common_quantity(Q, Q, Q) :- !.
 common_quantity(Q1, Q2, Q) :-
    same_dimension(Q1, Q2),
    common_quantity_(Q1, Q2, Q).
+% intersection of two subtrees:
+% if T1 is inside T2, Q = T1
+% if T2 is inside T1, Q = T2
+% else Q is the common ancestor of T1, T2
 common_quantity_(kind_of(Q1), kind_of(Q2), Q) =>
    simplify_dimensions(Q1, K1),
    simplify_dimensions(Q2, K2),
    common_quantity_(K1, K2, Q3),
-   (  K1 == Q3
+   (  K1 == Q3 % K2 is inside K1
    -> Q = kind_of(Q2)
    ;  K2 == Q3
    -> Q = kind_of(Q1)

@@ -106,18 +106,18 @@ partition_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
     partition_factors_(G1, R1, ChildParentGoal, L, N, G2, R2).
 
 partition_factors_(L1, R1, ChildParentGoal, L, N, L2, R2) :-
-    (   select(Dim-F1, L1, L11),
-        selectchk(Dim-F2, L2, L22)
-    ->  common_factors([F1], R11, ChildParentGoal, LL, N, [F2], R22),
-        !,
-        append(R11, R111, R1),
-        append(R22, R222, R2),
-        append(LL, LLL, L),
-        partition_factors_(L11, R111, ChildParentGoal, LLL, N, L22, R222)
-    ;   pairs_values(L1, V1),
-        pairs_values(L2, V2),
-        common_factors(V1, R1, ChildParentGoal, L, N, V2, R2)
-    ).
+    select(Dim-F1, L1, L11),
+    selectchk(Dim-F2, L2, L22),
+    common_factors([F1], R11, ChildParentGoal, LL, N, [F2], R22),
+    !,
+    append(R11, R111, R1),
+    append(R22, R222, R2),
+    append(LL, LLL, L),
+    partition_factors_(L11, R111, ChildParentGoal, LLL, N, L22, R222).
+partition_factors_(L1, R1, ChildParentGoal, L, N, L2, R2) :-
+    pairs_values(L1, V1),
+    pairs_values(L2, V2),
+    common_factors(V1, R1, ChildParentGoal, L, N, V2, R2).
 
 common_factors(L1, R1, ChildParentGoal, L, N, L2, R2) :-
    exclude(ground, L1, Vars1),

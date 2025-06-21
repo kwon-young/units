@@ -5,7 +5,8 @@
    implicitly_convertible/2,
    explicitly_convertible/2,
    same_kind/2,
-   alias_or_child_quantity_parent/2
+   alias_or_child_quantity_parent/2,
+   normalize_kind/2
 ]).
 
 :- use_module(utils).
@@ -206,6 +207,30 @@ explicitly_convertible(From, To) :-
    implicitly_convertible(From, To), !.
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From).
+
+normalize_kind_(kind_of(A)/kind_of(B), R) =>
+   normalize(A/B, AB),
+   R = kind_of(AB).
+normalize_kind_(kind_of(A)*kind_of(B), R) =>
+   normalize(A*B, AB),
+   R = kind_of(AB).
+normalize_kind_(kind_of(A)**N, R) =>
+   normalize(A**N, AN),
+   R = kind_of(AN).
+normalize_kind_(kind_of(A)/B, R) =>
+   normalize(A/B, R).
+normalize_kind_(A/kind_of(B), R) =>
+   normalize(A/B, R).
+normalize_kind_(kind_of(A)*B, R) =>
+   normalize(A*B, R).
+normalize_kind_(A*kind_of(B), R) =>
+   normalize(A*B, R).
+normalize_kind_(_, _) => fail.
+
+normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
+   normalize_kind(E1, R).
+normalize_kind(E, R) =>
+   normalize(E, R).
 
 :- begin_tests(quantity).
 

@@ -2,6 +2,7 @@
 
 :- use_module(utils).
 :- use_module(quantity, [quantity_dimensions/2]).
+:- use_module(unit_defs, [all_unit_kind/2]).
 :- use_module('../units.pl').
 
 :- meta_predicate common_expr(2, +, -, +, -, -).
@@ -90,7 +91,7 @@ get_dimension(Type, U-E, Dim-(U-E)) :-
     (   var(U)
     -> Dim = var
     ;   not_factor(U-E)
-    -> (   Type == units:unit_parent
+    -> (   Type = _:unit_parent
         ->  all_unit_kind(U**E, K)
         ;   K = U**E
         ),

@@ -9,12 +9,15 @@
    mapexpr/3,
    mapexpr/4,
    aliased/1,
-   lazy/2
+   lazy/2,
+   derived/1
 ]).
 
 :- use_module(library(yall)).
 :- use_module(library(apply)).
 :- use_module(library(apply_macros)).
+
+:- use_module('../units.pl', [alias/2]).
 
 %% normalize(+Expression, -NormalizedExpression) is det.
 %
@@ -345,6 +348,10 @@ lazy(Goal, Cond), \+ ground(Cond) =>
    when(ground(Cond), Goal).
 lazy(Goal, _) =>
    call(Goal).
+
+derived(_*_).
+derived(_/_).
+derived(_**_).
 
 :- begin_tests(utils).
 

@@ -1,6 +1,7 @@
 :- module(search, [common_expr/6, iterative_deepening/2]).
 
 :- use_module(utils).
+:- use_module(quantity, [quantity_dimensions/2]).
 :- use_module('../units.pl').
 
 :- meta_predicate common_expr(2, +, -, +, -, -).

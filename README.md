@@ -401,6 +401,13 @@ By defining these predicates, your custom units and quantities will be integrate
 
 ## Changelog
 
+### Version 0.16.0 (2025-06-21)
+
+- **Features & Enhancements:**
+  - now correctly handles variables in `common_expr` (does unification instead of generate and test)
+  - improved runtime of `common_expr` by partitioning along dimensions.
+  - added a lot of documentation
+
 ### Version 0.15.0 (2025-06-08)
 - **Features & Enhancements:**
   - Added a script to generate a hierarchical graph of quantities (`quantities.pdf`) (`9b475d9`, `5637d2c`).

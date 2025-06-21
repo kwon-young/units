@@ -345,6 +345,25 @@ Amount = 3,
 Unit = si:metre.
 ```
 
+This means you can write unit aware true relational predicates:
+
+```prolog
+avg_speed(Distance, Time, Speed) :-
+  qeval(Speed =:= Distance / Time as isq:speed).
+
+?- avg_speed(m, s, quantity(Speed)). % traditional forward mode
+Speed = 1*isq:speed[si:metre/si:second].
+?- avg_speed(quantity(Distance), s, m/s). % "backward" mode
+Distance = 1*isq:length[si:metre].
+?- avg_speed(X*inch, hour, m/s). % overspecified units
+X = 18000000r127.
+?- avg_speed(quantity(Distance), quantity(Time), quantity(Speed)). % underspecified units
+Distance = _A*isq:length[_B],
+Time = _C*isq:time[_D],
+Speed = _E*isq:speed[_F],
+... % lots of constraints
+```
+
 ## List of quantities and units
 
 Here is an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.

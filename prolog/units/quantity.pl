@@ -204,6 +204,10 @@ implicitly_convertible(From, To) :-
    alias_quantity_formula(To, Formula),
    implicitly_convertible(From, Formula).
 
+%% explicitly_convertible(?From, ?To) is semidet.
+%
+%  Two quantities are explicitly convertible if they are directly related,
+%  meaning one can be implicitly converted to the other.
 explicitly_convertible(From, To) :-
    implicitly_convertible(From, To), !.
 explicitly_convertible(From, To) :-

@@ -152,9 +152,10 @@ same_kind(Q1, Q2) =>
 %  Implicit conversion is possible if:
 %  - `From` and `To` are the same.
 %  - `From` is a direct descendant of `To` in the quantity hierarchy,
-%    or `To` is a `kind_of(X)` and `From` is in the subtree of `X`,
 %    and the conversion does not cross a defined `kind/1` barrier.
-%  - `To` is a `kind/1` and `From` is implicitly convertible
+%  - `To` is a `kind_of(X)` (a subtree) and `From` is in the subtree of `X`,
+%    and the conversion does not cross a defined `kind/1` barrier.
+%  - `To` is a root and `From` is implicitly convertible
 %    to the parent formula of `To`, without crossing a kind barrier.
 %  - `To` has a `quantity_formula/2` defined, and `From`
 %    is implicitly convertible to that formula.

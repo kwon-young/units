@@ -762,8 +762,8 @@ eval_(random_float, R) =>
    R = q{v: random_float, q: 1, u: 1}.
 eval_(unit(X), R) =>
    normalize_unit(X, U),
-   when(ground(U), all_unit_kind(U, kind_of(UKind))),
-   when((ground(UKind), ground(Q)), implicitly_convertible(kind_of(UKind), Q)),
+   when(ground(U), all_unit_kind(U, UKind)),
+   when((ground(UKind), ground(Q)), implicitly_convertible(UKind, Q)),
    R = q{v: 1, q: Q, u: U}.
 eval_(quantity(Quantity), R) =>
    Quantity = _*_[_],
@@ -1105,5 +1105,8 @@ test(has_type_fail_example, [error(type_error(isq:time, _))]) :-
 
 test(slow_conversion, []) :-
    qeval(_X*foot*lbf/s =:= 1*watt).
+
+test(unitless_with_constraints) :-
+   qeval(quantity _ is (3*foot)/(2*m)).
 
 :- end_tests(units).

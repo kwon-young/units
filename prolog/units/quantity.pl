@@ -251,10 +251,7 @@ normalize_kind_(A*kind_of(B), R) =>
    normalize(A*B, R).
 normalize_kind_(kind_of(A), R) =>
    normalize(A, A1),
-   (  A1 == 1
-   -> R = 1
-   ;  R = kind_of(A1)
-   ).
+   R = kind_of(A1).
 normalize_kind_(A, R) =>
    normalize(A, R).
 
@@ -266,7 +263,7 @@ test('quantity_kind') :-
 normalize_kind_data(kind_of(isq:mass)/(kind_of(isq:length)*kind_of(isq:time)**2),
                     kind_of(isq:mass/(isq:length*isq:time**2))).
 normalize_kind_data(1*kind_of(isq:length**3), kind_of(isq:length**3)).
-normalize_kind_data(kind_of(isq:time)/kind_of(isq:time), 1).
+normalize_kind_data(kind_of(isq:time)/kind_of(isq:time), kind_of(1)).
 
 test('normalize_kind', [forall(normalize_kind_data(K1, K2))]) :-
    normalize_kind(K1, R),

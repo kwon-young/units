@@ -213,6 +213,20 @@ explicitly_convertible(From, To) :-
 explicitly_convertible(From, To) :-
    implicitly_convertible(To, From).
 
+normalize_kind(A*B, R) =>
+   normalize_kind(A, AK),
+   normalize_kind(B, BK),
+   normalize_kind_(AK*BK, R).
+normalize_kind(A/B, R) =>
+   normalize_kind(A, AK),
+   normalize_kind(B, BK),
+   normalize_kind_(AK/BK, R).
+normalize_kind(A**N, R) =>
+   normalize_kind(A, AK),
+   normalize_kind_(AK**N, R).
+normalize_kind(A, R) =>
+   A = R.
+
 normalize_kind_(kind_of(A)/kind_of(B), R) =>
    normalize(A/B, AB),
    R = kind_of(AB).
@@ -230,16 +244,16 @@ normalize_kind_(kind_of(A)*B, R) =>
    normalize(A*B, R).
 normalize_kind_(A*kind_of(B), R) =>
    normalize(A*B, R).
-normalize_kind_(_, _) => fail.
-
-normalize_kind(E, R), mapsubterms(normalize_kind_, E, E1), dif(E, E1) =>
-   normalize_kind(E1, R).
-normalize_kind(E, R) =>
-   normalize(E, R).
+normalize_kind_(A, R) =>
+   normalize(A, R).
 
 :- begin_tests(quantity).
 
 test('quantity_kind') :-
    quantity_kind(isq:duration, isq:time).
+
+test('normalize_kind') :-
+   normalize_kind(kind_of(isq:mass)/(kind_of(isq:length)*kind_of(isq:time)**2), R),
+   R == kind_of(isq:mass/(isq:length*isq:time**2)).
 
 :- end_tests(quantity).

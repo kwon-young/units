@@ -225,17 +225,22 @@ normalize_kind(A**N, R) =>
    normalize_kind(A, AK),
    normalize_kind_(AK**N, R).
 normalize_kind(A, R) =>
-   A = R.
+   normalize_kind_(A, R).
 
 normalize_kind_(kind_of(A)/kind_of(B), R) =>
-   normalize(A/B, AB),
-   R = kind_of(AB).
+   normalize_kind_(kind_of(A/B), R).
 normalize_kind_(kind_of(A)*kind_of(B), R) =>
-   normalize(A*B, AB),
-   R = kind_of(AB).
+   normalize_kind_(kind_of(A*B), R).
 normalize_kind_(kind_of(A)**N, R) =>
-   normalize(A**N, AN),
-   R = kind_of(AN).
+   normalize_kind_(kind_of(A**N), R).
+normalize_kind_(kind_of(A)/1, R) =>
+   normalize_kind_(kind_of(A), R).
+normalize_kind_(1/kind_of(B), R) =>
+   normalize_kind_(kind_of(1/B), R).
+normalize_kind_(kind_of(A)*1, R) =>
+   normalize_kind_(kind_of(A), R).
+normalize_kind_(1*kind_of(B), R) =>
+   normalize_kind_(kind_of(B), R).
 normalize_kind_(kind_of(A)/B, R) =>
    normalize(A/B, R).
 normalize_kind_(A/kind_of(B), R) =>
@@ -244,6 +249,12 @@ normalize_kind_(kind_of(A)*B, R) =>
    normalize(A*B, R).
 normalize_kind_(A*kind_of(B), R) =>
    normalize(A*B, R).
+normalize_kind_(kind_of(A), R) =>
+   normalize(A, A1),
+   (  A1 == 1
+   -> R = 1
+   ;  R = kind_of(A1)
+   ).
 normalize_kind_(A, R) =>
    normalize(A, R).
 
@@ -252,8 +263,13 @@ normalize_kind_(A, R) =>
 test('quantity_kind') :-
    quantity_kind(isq:duration, isq:time).
 
-test('normalize_kind') :-
-   normalize_kind(kind_of(isq:mass)/(kind_of(isq:length)*kind_of(isq:time)**2), R),
-   R == kind_of(isq:mass/(isq:length*isq:time**2)).
+normalize_kind_data(kind_of(isq:mass)/(kind_of(isq:length)*kind_of(isq:time)**2),
+                    kind_of(isq:mass/(isq:length*isq:time**2))).
+normalize_kind_data(1*kind_of(isq:length**3), kind_of(isq:length**3)).
+normalize_kind_data(kind_of(isq:time)/kind_of(isq:time), 1).
+
+test('normalize_kind', [forall(normalize_kind_data(K1, K2))]) :-
+   normalize_kind(K1, R),
+   R == K2.
 
 :- end_tests(quantity).

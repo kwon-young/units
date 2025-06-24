@@ -1,6 +1,8 @@
-:- use_module(library(units)).
+% :- use_module(library(units)).
+:- use_module('../prolog/units.pl').
 
-units:quantity_dimension(currency, '$').
+units:dimension_symbol(currency_dim, '$').
+units:quantity_parent(currency, currency_dim).
 
 units:unit_symbol(euro, €).
 units:unit_symbol(us_dollar, usd).
@@ -13,7 +15,9 @@ exchange_rate(From, To, Rate) :-
    qeval(Rate is random_float *To/From).
 
 exchange_to(From, ToUnit, To) :-
-   exchange_rate(From.u, ToUnit, Rate),
+   qeval(F is From),
+   F = _*_[U],
+   exchange_rate(U, ToUnit, Rate),
    qeval(To is Rate * From).
 
 main :-

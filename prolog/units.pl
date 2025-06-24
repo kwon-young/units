@@ -770,10 +770,7 @@ eval_(quantity(Quantity), R) =>
    eval_(Quantity, R).
 eval_(QuantityExpr[UnitExpr], R) =>
    eval_q(QuantityExpr, Q),
-   (  var(UnitExpr)
-   -> eval_(unit(UnitExpr), Unit)
-   ;  eval_(UnitExpr, Unit)
-   ),
+   eval_(unit(UnitExpr), Unit),
    (  implicitly_convertible(Unit.q, Q)
    -> true
    ;  domain_error(Unit.q, Q)
@@ -1081,8 +1078,7 @@ test('radian', [error(_)]) :-
 test('qformat', [
    forall(qformat_data(Expr, ExpectedString))
 ]) :-
-   qeval(QuantityDict is Expr),
-   with_output_to(string(FormattedString), qformat(QuantityDict)),
+   with_output_to(string(FormattedString), qformat(Expr)),
    assertion(FormattedString == ExpectedString).
 
 qformat_data(10 * si:metre, "10 m").

@@ -438,17 +438,17 @@ qformat(VFormat, M) :-
 %  @param Term The term to check.
 error:has_type(quantity, Term) :-
    !,
-   catch(eval_(Term, R), _, fail),
+   catch(eval_(no, Term, R), _, fail),
    is_dict(R, q).
 error:has_type(quantity_point, Term) :-
    !,
-   catch(eval_(Term, R), _, fail),
+   catch(eval_(no, Term, R), _, fail),
    is_dict(R, qp).
 error:has_type(Quantity, Term) :-
    ground(Quantity),
    any_quantity(Quantity),
    !,
-   catch(eval_(Term, R), _, fail),
+   catch(eval_(no, Term, R), _, fail),
    (  is_dict(R, q)
    -> Q = R.q
    ;  is_dict(R, qp),
@@ -456,10 +456,10 @@ error:has_type(Quantity, Term) :-
    ),
    implicitly_convertible(Q, Quantity).
 
-unit_origin_0(Unit, Origin) =>
+unit_origin_0(M, Unit, Origin) =>
    (  aliased(unit_origin(Unit, O))
-   -> normalize_origin(O, Origin)
-   ;  eval_(0*Unit, Q),
+   -> normalize_origin(M, O, Origin)
+   ;  eval_(M, 0*Unit, Q),
       Origin = qp{o: 0, q: Q}
    ).
 
@@ -473,20 +473,20 @@ all_origin_(Origin) :-
 all_origin(Origin) :-
    lazy(aliased(all_origin_(Origin)), Origin).
 
-normalize_origin(Origin, qp{o: Origin, q: Q}) :-
-   when(ground(Origin), normalize_origin_(Origin, Q)),
-   eval_(0*_[_], Q).
-normalize_origin_(Origin, Q), unit_origin(Unit, Origin) =>
-   eval_(Unit, R),
+normalize_origin(M, Origin, qp{o: Origin, q: Q}) :-
+   when(ground(Origin), normalize_origin_(M, Origin, Q)),
+   eval_(M, 0*_[_], Q).
+normalize_origin_(M, Origin, Q), unit_origin(Unit, Origin) =>
+   eval_(M, Unit, R),
    Q = R.put([v=0]).
-normalize_origin_(Origin, Q), absolute_point_origin(Origin, Quantity) =>
-   eval_(Quantity[_], R),
+normalize_origin_(M, Origin, Q), absolute_point_origin(Origin, Quantity) =>
+   eval_(M, Quantity[_], R),
    Q = R.put([v=0]).
-normalize_origin_(Origin, Q), relative_point_origin(Origin, Expr) =>
-   eval_(Expr, QP),
+normalize_origin_(M, Origin, Q), relative_point_origin(Origin, Expr) =>
+   eval_(M, Expr, QP),
    Q = QP.q.put([v=0]).
-normalize_origin_(Alias, Q), alias(Alias, Origin) =>
-   normalize_origin_(Origin, QP),
+normalize_origin_(M, Alias, Q), alias(Alias, Origin) =>
+   normalize_origin_(M, Origin, QP),
    Q = QP.q.
 
 common_origin(O1, F1, O2, F2, O) :-
@@ -494,10 +494,10 @@ common_origin(O1, F1, O2, F2, O) :-
 
 common_origin(O, F, O, F, O, _-N) :-
    setarg(1, N, no),
-   eval_(0*_[_], F).
+   eval_(no, 0*_[_], F).
 common_origin(O1, F1, O2, F2, O, N) :-
    relative_point_origin(O1, Expr),
-   eval_(Expr, R),
+   eval_(no, Expr, R),
    common_origin_(R.o, FF1, O2, F2, O, N),
    F1 = R.q + FF1.
 common_origin(Alias, F1, O2, F2, O, N) :-
@@ -513,48 +513,48 @@ common_origin_(O1, F1, O2, F2, O, Limit-N) :-
    ;  common_origin(O2, F2, O1, F1, O, Limit1-N)
    ).
 
-comparable(AB, R) :-
+comparable(M, AB, R) :-
    AB =.. [Op, A, B],
-   eval_(B, B1),
+   eval_(M, B, B1),
    is_dict(B1, BTag),
    (  Op == is, var(A)
    -> comparable_is(A, BTag:B1, R)
-   ;  eval_(A, A1),
+   ;  eval_(M, A, A1),
       is_dict(A1, ATag),
-      comparable(Op, ATag:A1, BTag:B1, R)
+      comparable(M, Op, ATag:A1, BTag:B1, R)
    ).
-comparable(is, qp:A, qp:B, R) =>
+comparable(M, is, qp:A, qp:B, R) =>
    (  common_origin(A.o, F1, B.o, F2, _)
-   -> comparable(A.q is (F2 + B.q) - F1, RQ),
+   -> comparable(M, A.q is (F2 + B.q) - F1, RQ),
       R = A.put([q=RQ])
    ;  domain_error(A.o, B.o)
    ).
-comparable(=:=, qp:A, qp:B, R) =>
+comparable(M, =:=, qp:A, qp:B, R) =>
    (  common_origin(A.o, F1, B.o, F2, O)
-   -> comparable(A.q + F1 =:= F2 + B.q, RQ),
+   -> comparable(M, A.q + F1 =:= F2 + B.q, RQ),
       R = qp{o: O, q: RQ}
    ;  domain_error(A.o, B.o)
    ).
-comparable(=\=, qp:A, qp:B, R) =>
+comparable(M, =\=, qp:A, qp:B, R) =>
    (  common_origin(A.o, F1, B.o, F2, O)
-   -> comparable(A.q + F1 =\= F2 + B.q, RQ),
+   -> comparable(M, A.q + F1 =\= F2 + B.q, RQ),
       R = qp{o: O, q: RQ}
    ;  domain_error(A.o, B.o)
    ).
-comparable(-, qp:A, qp:B, R) =>
+comparable(M, -, qp:A, qp:B, R) =>
    (  common_origin(A.o, F1, B.o, F2, _)
-   -> comparable((F1 + A.q) - (F2 + B.q), R)
+   -> comparable(M, (F1 + A.q) - (F2 + B.q), R)
    ;  domain_error(A.o, B.o)
    ).
-comparable(-, qp:A, q:B, R) =>
-   comparable(A.q - B, Q),
+comparable(M, -, qp:A, q:B, R) =>
+   comparable(M, A.q - B, Q),
    R = A.put([q=Q]).
-comparable(+, qp:A, q:B, R) =>
-   comparable(+, q:(A.q), q:B, RQ),
+comparable(M, +, qp:A, q:B, R) =>
+   comparable(M, +, q:(A.q), q:B, RQ),
    R = A.put([q=RQ]).
-comparable(+, q:A, qp:B, R) =>
-   comparable(+, qp:B, q:A, R).
-comparable(Op, q:A, q:B, R) =>
+comparable(M, +, q:A, qp:B, R) =>
+   comparable(M, +, qp:B, q:A, R).
+comparable(_, Op, q:A, q:B, R) =>
    (  common_quantity(A.q, B.q, Q),
       same_kind(A.q, B.q)
    -> (  common_unit(A.u, AV, B.u, BV, U)
@@ -584,6 +584,7 @@ comparable_is(A, qp:B, R) =>
    ),
    A = Origin+AQ.
 
+:- module_transparent(qeval/1).
 %% qeval(+Expr) is det.
 %
 %  Evaluates an arithmetic expression `Expr` involving quantities, units, and quantity points.
@@ -651,7 +652,8 @@ qeval((A, B)) =>
    qeval(A),
    qeval(B).
 qeval(Expr) =>
-   eval_(Expr, Q),
+   context_module(M),
+   eval_(M, Expr, Q),
    is_dict(Q, Tag),
    qeval_call(Tag:Q).
 
@@ -664,123 +666,123 @@ qeval_call(q:Q) =>
 qeval_call(qp:P) =>
    qeval_call(q:(P.q)).
 
-eval_({ExprIn}, R) =>
-   eval_(ExprIn, ExprOut),
+eval_(M, {ExprIn}, R) =>
+   eval_(M, ExprIn, ExprOut),
    R = ExprOut.put(v, {ExprOut.v}).
-eval_(Result is ExprIn, R) =>
-   comparable(Result is ExprIn, R).
-eval_(+A, R) =>
-   eval_(A, A1),
+eval_(M, Result is ExprIn, R) =>
+   comparable(M, Result is ExprIn, R).
+eval_(M, +A, R) =>
+   eval_(M, A, A1),
    R = A1.put(v, +A1.v).
-eval_(-A, R) =>
-   eval_(A, A1),
+eval_(M, -A, R) =>
+   eval_(M, A, A1),
    R = A1.put(v, -A1.v).
-eval_(A+B, R) =>
-   comparable(A+B, R).
-eval_(A-B, R) =>
-   comparable(A-B, R).
-eval_(A=:=B, R) =>
-   comparable(A=:=B, R).
-eval_(A=\=B, R) =>
-   comparable(A=\=B, R).
-eval_(A<B, R) =>
-   comparable(A<B, R).
-eval_(A>B, R) =>
-   comparable(A>B, R).
-eval_(A=<B, R) =>
-   comparable(A=<B, R).
-eval_(A>=B, R) =>
-   comparable(A>=B, R).
-eval_(A*B, R) =>
-   eval_(A, A1),
-   eval_(B, B1),
+eval_(M, A+B, R) =>
+   comparable(M, A+B, R).
+eval_(M, A-B, R) =>
+   comparable(M, A-B, R).
+eval_(M, A=:=B, R) =>
+   comparable(M, A=:=B, R).
+eval_(M, A=\=B, R) =>
+   comparable(M, A=\=B, R).
+eval_(M, A<B, R) =>
+   comparable(M, A<B, R).
+eval_(M, A>B, R) =>
+   comparable(M, A>B, R).
+eval_(M, A=<B, R) =>
+   comparable(M, A=<B, R).
+eval_(M, A>=B, R) =>
+   comparable(M, A>=B, R).
+eval_(M, A*B, R) =>
+   eval_(M, A, A1),
+   eval_(M, B, B1),
    normalize_kind(A1.q*B1.q, Q),
    normalize(A1.u*B1.u, U),
    normalize(A1.v*B1.v, V),
    R = q{v: V, q: Q, u: U}.
-eval_(A/B, R) =>
-   eval_(A, A1),
-   eval_(B, B1),
+eval_(M, A/B, R) =>
+   eval_(M, A, A1),
+   eval_(M, B, B1),
    normalize_kind(A1.q/B1.q, Q),
    normalize(A1.u/B1.u, U),
    normalize(A1.v/B1.v, V),
    R = q{v: V, q: Q, u: U}.
-eval_(A**N, R) =>
-   eval_(A, A1),
+eval_(M, A**N, R) =>
+   eval_(M, A, A1),
    normalize_kind(A1.q**N, Q),
    normalize(A1.u**N, U),
    normalize(A1.v**N, V),
    R = q{v: V, q: Q, u: U}.
-eval_(A^N, R) =>
-   eval_(A**N, R).
-eval_(in(Expr, Unit), R) =>
-   eval_(Expr, M),
-   (  is_dict(M, qp)
-   -> eval_(in(M.q, Unit), Q),
-      R = M.put([q=Q])
-   ;  eval_(Unit, Q),
-      (  implicitly_convertible(M.q, Q.q)
-      -> common_unit(M.u, F1, Q.u, F2, _),
-         normalize(M.v*F1/F2, V),
-         R = q{v: V, q: M.q, u: Q.u}
-      ;  domain_error(M.q, Q.q)
+eval_(M, A^N, R) =>
+   eval_(M, A**N, R).
+eval_(M, in(Expr, Unit), R) =>
+   eval_(M, Expr, R1),
+   (  is_dict(R1, qp)
+   -> eval_(M, in(R1.q, Unit), Q),
+      R = R1.put([q=Q])
+   ;  eval_(M, Unit, Q),
+      (  implicitly_convertible(R1.q, Q.q)
+      -> common_unit(R1.u, F1, Q.u, F2, _),
+         normalize(R1.v*F1/F2, V),
+         R = q{v: V, q: R1.q, u: Q.u}
+      ;  domain_error(R1.q, Q.q)
       )
    ).
-eval_(as(Expr, Quantity), R), any_quantity(Quantity) =>
-   eval_(Expr, M),
-   (  is_dict(M, qp)
-   -> eval_(as(M.q, Quantity), Q),
-      R = M.put([q=Q])
-   ;  (  implicitly_convertible(M.q, Quantity)
-      -> R = M.put(q, Quantity)
-      ;  domain_error(M.q, Quantity)
+eval_(M, as(Expr, Quantity), R), any_quantity(Quantity) =>
+   eval_(M, Expr, R1),
+   (  is_dict(R1, qp)
+   -> eval_(M, as(R1.q, Quantity), Q),
+      R = R1.put([q=Q])
+   ;  (  implicitly_convertible(R1.q, Quantity)
+      -> R = R1.put(q, Quantity)
+      ;  domain_error(R1.q, Quantity)
       )
    ).
-eval_(force_as(Expr, Quantity), R), any_quantity(Quantity) =>
-   eval_(Expr, M),
-   (  is_dict(M, qp)
-   -> eval_(force_as(M.q, Quantity), Q),
-      R = M.put([q=Q])
-   ;  (  explicitly_convertible(M.q, Quantity)
-      -> R = M.put(q, Quantity)
-      ;  domain_error(M.q, Quantity)
+eval_(M, force_as(Expr, Quantity), R), any_quantity(Quantity) =>
+   eval_(M, Expr, R1),
+   (  is_dict(R1, qp)
+   -> eval_(M, force_as(R1.q, Quantity), Q),
+      R = R1.put([q=Q])
+   ;  (  explicitly_convertible(R1.q, Quantity)
+      -> R = R1.put(q, Quantity)
+      ;  domain_error(R1.q, Quantity)
       )
    ).
-eval_(cast(Expr, Quantity), R), any_quantity(Quantity) =>
-   eval_(Expr, M),
-   (  is_dict(M, qp)
-   -> eval_(cast(M.q, Quantity), Q),
-      R = M.put([q=Q])
-   ;  (  common_quantity(M.q, Quantity, _)
-      -> R = M.put(q, Quantity)
-      ;  domain_error(M.q, Quantity)
+eval_(M, cast(Expr, Quantity), R), any_quantity(Quantity) =>
+   eval_(M, Expr, R1),
+   (  is_dict(R1, qp)
+   -> eval_(M, cast(R1.q, Quantity), Q),
+      R = R1.put([q=Q])
+   ;  (  common_quantity(R1.q, Quantity, _)
+      -> R = R1.put(q, Quantity)
+      ;  domain_error(R1.q, Quantity)
       )
    ).
-eval_(pi, R) =>
+eval_(_, pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
-eval_(random_float, R) =>
+eval_(_, random_float, R) =>
    R = q{v: random_float, q: 1, u: 1}.
-eval_(unit(X), R) =>
-   normalize_unit(X, U),
+eval_(M, unit(X), R) =>
+   normalize_unit(M, X, U),
    when(ground(U), all_unit_kind(U, UKind)),
    when((ground(UKind), ground(Q)), implicitly_convertible(UKind, Q)),
    R = q{v: 1, q: Q, u: U}.
-eval_(quantity(Quantity), R) =>
+eval_(M, quantity(Quantity), R) =>
    Quantity = _*_[_],
-   eval_(Quantity, R).
-eval_(QuantityExpr[UnitExpr], R) =>
+   eval_(M, Quantity, R).
+eval_(M, QuantityExpr[UnitExpr], R) =>
    eval_q(QuantityExpr, Q),
-   eval_(unit(UnitExpr), Unit),
+   eval_(M, unit(UnitExpr), Unit),
    (  implicitly_convertible(Unit.q, Q)
    -> true
    ;  domain_error(Unit.q, Q)
    ),
    R = Unit.put([q=Q]).
-eval_(point(Expr), R) =>
-   eval_(Expr, Q),
-   unit_origin_0(Q.u, Origin),
+eval_(M, point(Expr), R) =>
+   eval_(M, Expr, Q),
+   unit_origin_0(M, Q.u, Origin),
    R = Origin.put([q=Q]).
-eval_(quantity_point(QP), R) =>
+eval_(M, quantity_point(QP), R) =>
    QP = O + Q,
    (  var(O)
    -> Origin = origin(O)
@@ -790,36 +792,36 @@ eval_(quantity_point(QP), R) =>
    -> Quantity = quantity(Q)
    ;  Quantity = Q
    ),
-   eval_(Origin + Quantity, R).
-eval_(origin(Origin), R), all_origin(Origin) =>
-   normalize_origin(Origin, R).
-eval_(exp(Expr), R) =>
-   eval_(Expr in 1, R1),
+   eval_(M, Origin + Quantity, R).
+eval_(M, origin(Origin), R), all_origin(Origin) =>
+   normalize_origin(M, Origin, R).
+eval_(M, exp(Expr), R) =>
+   eval_(M, Expr in 1, R1),
    R = R1.put([v=exp(R1.v)]).
-eval_(quantity_from_zero(Expr), R) =>
-   eval_(Expr - origin(0), R).
-eval_(quantity_from(Expr, Origin), R) =>
-   eval_(Expr, R1),
-   eval_(R1 - Origin in R1.q.u, R).
-eval_(point_for(Expr, Origin), R) =>
+eval_(M, quantity_from_zero(Expr), R) =>
+   eval_(M, Expr - origin(0), R).
+eval_(M, quantity_from(Expr, Origin), R) =>
+   eval_(M, Expr, R1),
+   eval_(M, R1 - Origin in R1.q.u, R).
+eval_(M, point_for(Expr, Origin), R) =>
    (  (var(Origin) ; Origin = 0)
    -> O = origin(Origin)
    ;  O = Origin
    ),
-   eval_(O + quantity_from(Expr, Origin), R).
-eval_(X, R), var(X) =>
+   eval_(M, O + quantity_from(Expr, Origin), R).
+eval_(_, X, R), var(X) =>
    R = q{v: X, q: 1, u: 1}.
-eval_(Q, R), is_dict(Q, q) =>
+eval_(_, Q, R), is_dict(Q, q) =>
    R = Q.
-eval_(N, R), number(N) =>
+eval_(_, N, R), number(N) =>
    R = q{v: N, q: 1, u: 1}.
-eval_(UnitOrSymbol, R), ground(UnitOrSymbol), normalize_unit(UnitOrSymbol, Unit) =>
+eval_(M, UnitOrSymbol, R), ground(UnitOrSymbol), normalize_unit(M, UnitOrSymbol, Unit) =>
    all_unit_kind(Unit, Kind),
    R = q{v: 1, q: Kind, u: Unit}.
-eval_(Point, R), is_dict(Point, qp) =>
+eval_(_, Point, R), is_dict(Point, qp) =>
    R = Point.
-eval_(Origin, R), all_origin(Origin) =>
-   normalize_origin(Origin, R).
+eval_(M, Origin, R), all_origin(Origin) =>
+   normalize_origin(M, Origin, R).
 
 eval_q(quantity(Q), R), any_quantity(Q) =>
    R = Q.
@@ -827,6 +829,9 @@ eval_q(X, R), any_quantity(X) =>
    R = X.
 
 :- begin_tests(units, [timeout(2)]).
+
+:- use_module(units/systems/si/symbols).
+:- use_module(units/systems/usc/symbols, [inch/1, foot/1, lbf/1]).
 
 qeval_data(si:metre =:= si:metre).
 qeval_data(si:kilo(metre) =:= si:kilo(metre)).
@@ -1018,9 +1023,9 @@ test('absolute_point_origin_error', [error(_)]) :-
    qeval(_ is quantity_from_zero(si:absolute_zero + 100*kelvin)).
 
 units:absolute_point_origin(oa,isq:distance).
-units:relative_point_origin(ob, oa + 10*m).
-units:relative_point_origin(oc, ob + 10*m).
-units:relative_point_origin(od, oa + 30*m).
+units:relative_point_origin(ob, oa + 10*si:metre).
+units:relative_point_origin(oc, ob + 10*si:metre).
+units:relative_point_origin(od, oa + 30*si:metre).
 
 test('relative_point_origin') :-
    qeval(QP1 is oc + 100*m),

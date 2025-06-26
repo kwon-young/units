@@ -1,7 +1,7 @@
 :- module(unit_defs, [
    all_unit_kind/2,
    common_unit/5,
-   normalize_unit/2,
+   normalize_unit/3,
    unit/2,
    unit_parent/2
 ]).
@@ -68,33 +68,40 @@ all_unit_kind_(Unit, R), derived(Unit) =>
    normalize_kind(NKind, R).
 all_unit_kind_(_, _) => fail.
 
-normalize_unit(Unit, R), var(Unit), ground(R) =>
+fail_call(M:Goal, Arg) :-
+   debug(fail_call, "~p", [M]),
+   atom(Goal),
+   Head =.. [Goal, Arg],
+   predicate_property(M:Head, visible),
+   call(M:Head).
+   
+normalize_unit(_, Unit, R), var(Unit), ground(R) =>
    Unit = R.
-normalize_unit(Unit, R), var(Unit), var(R) =>
-   when((ground(Unit) ; ground(R)), normalize_unit(Unit, R)).
-normalize_unit(Unit, R), unit(Unit, _) =>
+normalize_unit(M, Unit, R), var(Unit), var(R) =>
+   when((ground(Unit) ; ground(R)), normalize_unit(M, Unit, R)).
+normalize_unit(_, Unit, R), unit(Unit, _) =>
    R = Unit.
-normalize_unit(Symbol, R), unit(Unit, Symbol) =>
+normalize_unit(M, Symbol, R), fail_call(M:Symbol, Unit) =>
    R = Unit.
-normalize_unit(Unit, R), unit(Module:Unit, _) =>
+normalize_unit(M, Unit, R), fail_call(M:Unit, ModuleUnit) =>
+   R = ModuleUnit.
+normalize_unit(M, Module:Symbol, R), fail_call(M:Symbol, Module:Unit) =>
    R = Module:Unit.
-normalize_unit(Module:Symbol, R), unit(Module:Unit, Symbol) =>
-   R = Module:Unit.
-normalize_unit(Module:PrefixUnit, R),
+normalize_unit(M, Module:PrefixUnit, R),
       PrefixUnit =.. [Prefix, Unit],
       prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
+   normalize_unit(M, Unit, R1),
    R2 =.. [Prefix, R1],
    R = Module:R2.
-normalize_unit(PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(Unit, R1),
+normalize_unit(M, PrefixUnit, R),
+      PrefixUnit =.. [PrefixSymbol, Unit],
+      fail_call(M:PrefixSymbol, Module:Prefix) =>
+   normalize_unit(M, Unit, R1),
    R2 =.. [Prefix, R1],
    R = Module:R2.
-normalize_unit(U, R), derived(U) =>
-   mapexpr(normalize_unit, [_, _]>>fail, U, R).
-normalize_unit(_, _) => fail.
+normalize_unit(M, U, R), derived(U) =>
+   mapexpr(normalize_unit(M), [_, _]>>fail, U, R).
+normalize_unit(_, _, _) => fail.
 
 common_unit(Unit1, NewFactor1, Unit2, NewFactor2, NewUnit), unifiable(Unit1, Unit2, _) =>
    Unit1 = Unit2,

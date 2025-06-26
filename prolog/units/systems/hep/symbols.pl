@@ -1,0 +1,11 @@
+:-module(hep_symbol,[c/1,speed_of_light/1,b/1,barn/1,m_p/1,proton_mass/1,m_e/1,electron_mass/1,m_n/1,neutron_mass/1]).
+c(:(hep,speed_of_light)).
+speed_of_light(:(hep,speed_of_light)).
+b(:(hep,barn)).
+barn(:(hep,barn)).
+m_p(:(hep,proton_mass)).
+proton_mass(:(hep,proton_mass)).
+m_e(:(hep,electron_mass)).
+electron_mass(:(hep,electron_mass)).
+m_n(:(hep,neutron_mass)).
+neutron_mass(:(hep,neutron_mass)).

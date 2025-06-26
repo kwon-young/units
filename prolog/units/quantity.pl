@@ -179,11 +179,9 @@ implicitly_convertible(From, To) :-
       CommonQuantity = AliasNormalizedTo
    ),
    derived_quantity_kind(From, FromKind),
-   mapexpr1(
-      kind,
-      {AliasNormalizedTo}/[F]>>common_quantity(F, AliasNormalizedTo, F),
-      [_]>>true,
-      FromKind
+   (  kind(FromKind)
+   -> common_quantity(FromKind, AliasNormalizedTo, FromKind)
+   ;  true
    ),
    !.
 % From can be implicitly converted to a kind To if From can be implicitly

@@ -88,15 +88,15 @@ normalize_unit(M, Unit, R), fail_call(M:Unit, ModuleUnit) =>
    R = ModuleUnit.
 normalize_unit(M, Module:Symbol, R), fail_call(M:Symbol, Module:Unit) =>
    R = Module:Unit.
-normalize_unit(M, Module:PrefixUnit, R),
-      PrefixUnit =.. [Prefix, Unit],
-      prefix(Module:Prefix, _, _) =>
-   normalize_unit(M, Unit, R1),
-   R2 =.. [Prefix, R1],
-   R = Module:R2.
-normalize_unit(M, PrefixUnit, R),
-      PrefixUnit =.. [PrefixSymbol, Unit],
-      fail_call(M:PrefixSymbol, Module:Prefix) =>
+normalize_unit(M, ModulePrefixUnit, R),
+      (  subsumes_term(_:_, ModulePrefixUnit)
+      -> Module:PrefixUnit = ModulePrefixUnit
+      ;  PrefixUnit = ModulePrefixUnit
+      ),
+      PrefixUnit =.. [P, Unit],
+      (  prefix(Module:P, _, _), Prefix = P
+      ;  prefix(Module:Prefix, P, _)
+      ) =>
    normalize_unit(M, Unit, R1),
    R2 =.. [Prefix, R1],
    R = Module:R2.

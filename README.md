@@ -31,7 +31,7 @@ Use multiplication `*` to create quantities:
 
 ```prolog
 ?- use_module(library(units)).
-?- qeval(X is 3*metre).
+?- qeval(X is 3*si:metre).
 X = 3*kind_of(isq:length)[si:metre].
 ```
 
@@ -70,13 +70,43 @@ This quantity type was derived from the units used in the expression:
 For convenience, the same units can be used without their system (the `si:` prefix) or with their symbol (`m` for metre and `s` for second):
 
 ```prolog
-?- qeval(Q is 3 * m / s).
+?- use_module(library(units/systems/si/symbols)).
+?- qeval(Q is 3 * m / second).
 Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
 ```
 
-> :warning: The same symbol can be used for multiple units in the library.
-> There are currently no mechanism to avoid name collision, so be extra careful when using them.
-> Known pitfall symbols: `ft` usually means foot, but can also mean `si:femto(si:tonne)`
+Since a lot of units from different systems share the same symbol (or name), the use of symbols is enabled by importing sub modules `units/systems/{System}/symbols`.
+This will introduce a predicate per symbol and unit name in the current context module.
+These predicates will be used to disambiguate the use of symbols, as well as make sure that no duplicate symbols can be used in the same context.
+
+For example, importing symbols for both `si` and `usc` systems will result in a number of predicate name collisions:
+
+```prolog
+?- use_module(library(units/systems/si/symbols)).
+?- use_module(library(units/systems/usc/symbols)).
+...
+_symbol)
+ERROR: import/1: No permission to import usc_symbol:(ft/1) into user (already imported from si_symbol)
+ERROR: import/1: No permission to import usc_symbol:(pk/1) into user (already imported from si_symbol)
+...
+true.
+```
+
+You can resolve conflicts by using the [`use_module/2`](https://www.swi-prolog.org/pldoc/doc_for?object=use_module/2) directive by including, excluding or renaming predicates:
+
+```prolog
+?- use_module(library(units/systems/si/symbols), except([ft/1])).
+?- use_module(library(units/systems/usc/symbols), [ft/1, pk/1 as mypk]).
+true.
+?- qeval(X is ft), qeval(Y is mypk).
+X = 1*kind_of(isq:length)[usc:foot],
+Y = 1*kind_of(isq:length**3)[usc:peck].
+
+> :warning: Be aware that importing a symbol module will introduce a **lot** of short named predicates.
+> This can potentionally cause naming collision with your own code.
+> Therefore, when using symbols in code, try to import only the symbol used and no more.
+> Even better is to avoid symbols in code altogether, and only used symbols for oneoff
+> interactive queries on the top level.
 
 Quantities of the same kind can be added, subtracted and compared:
 
@@ -397,9 +427,23 @@ Here's a breakdown of the key predicates you'll use:
     units:unit_kind(us_dollar, currency).
     ```
 
+4.  **Provide symbols for use in expression**
+    If you want to use symbols in expression for `qeval`, you need to provide 1 arity predicate of the form `Symbol(Unit)` that can be imported in the user module:
+    ```prolog
+    :- module(currency_symbols, ['€'/1, usd/1]).
+    '€'(euro).
+    usd(us_dollar).
+    ```
+    The symbol name is arbitrary, but be very careful that every predicate is unique.
+
 By defining these predicates, your custom units and quantities will be integrated into the system, allowing them to be used with `qeval/1` and other library features.
 
 ## Changelog
+
+### Version 0.19.0 (2025-06-26)
+
+- **Features & Enhancements:**
+  - Use the swi-prolog module system to disambiguate symbol and unit names in expressions.
 
 ### Version 0.16.0 (2025-06-21)
 

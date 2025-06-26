@@ -9,6 +9,7 @@
 :- use_module(utils).
 :- use_module(search).
 :- use_module(quantity).
+:- use_module('../units').
 
 any_unit_symbol(Unit, Symbol) :-
    (  unit_symbol(Unit, Symbol)

@@ -1,4 +1,5 @@
-:- use_module(library(units)).
+:- use_module('../prolog/units.pl').
+:- use_module('../prolog/units/systems/si/symbols.pl').
 
 units:kind(ni:beat_count).
 units:kind(ni:midi_clock).
@@ -37,6 +38,13 @@ units:unit_symbol_formula(ni:dotted_eight_note, '8th.', 3*ni:sixteenth_note).
 units:unit_symbol_formula(ni:beat, beat, ni:quarter_note).
 units:unit_symbol_formula(ni:beats_per_minute, bpm, ni:beat / si:minute).
 units:unit_symbol_formula(ni:midi_pulse_per_quarter, ppqn, ni:midi_pulse / ni:quarter_note).
+sample(ni:sample).
+pcm(ni:sample_value).
+bpm(ni:beats_per_minute).
+dotted_quarter_note(ni:dotted_quarter_note).
+ppqn(ni:midi_pulse_per_quarter).
+midi_pulse(ni:midi_pulse).
+quarter_note(ni:quarter_note).
 
 units:unit_kind(ni:sample, ni:sample_count).
 units:unit_kind(ni:sample_value, ni:unit_sample_amount).
@@ -81,7 +89,7 @@ main :-
    format("Power2 is ~p", [Power2]), nl,
    format("Tempo is ~p", [Tempo]), nl,
    format("ReverbBeats is ~p", [ReverbBeats]), nl,
-   format("ReverbTime is ~p", [ReverbTime.in(s)]), nl,
+   format("ReverbTime is ~@", [qformat(ReverbTime in s)]), nl,
    format("PulsePerQuarter is ~p", [PulsePerQuarter]), nl,
    format("TransportPosition is ~p", [TransportPosition]), nl,
    format("TransportBeats is ~p", [TransportBeats]), nl,

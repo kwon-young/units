@@ -1,5 +1,5 @@
-% :- use_module('../prolog/units.pl').
-:- use_module(library(units)).
+:- use_module('../prolog/units.pl').
+:- use_module('../prolog/units/systems/si/symbols.pl').
 
 units:relative_point_origin(room_reference_temp,point(21*(si:degree_Celsius))).
 
@@ -9,10 +9,12 @@ main :-
    qeval(RoomRef is room_reference_temp + 0 * isq:'Celsius_temperature'[degree_Celsius]),
    qeval(RoomLow is RoomRef - NumberOfSteps * StepDelta),
    qeval(RoomHigh is RoomRef + NumberOfSteps * StepDelta),
+   qeval(RoomRefK is RoomRef in si:kelvin),
+   qeval(RoomRefKA is RoomRefK quantity_from si:absolute_zero),
    format("Room reference temperature: ~@ (~@, ~@)~n", [
-      qformat(RoomRef.quantity_from(si:ice_point)),
-      qformat(RoomRef.in(usc:degree_Fahrenheit).quantity_from(usc:zeroth_degree_Fahrenheit)),
-      qformat(RoomRef.in(si:kelvin).quantity_from(si:absolute_zero))]),
+      qformat(RoomRef quantity_from si:ice_point),
+      qformat((RoomRef in usc:degree_Fahrenheit) quantity_from usc:zeroth_degree_Fahrenheit),
+      qformat(RoomRefKA)]),
    nl,
    F = "| ~t~s~t~20+ | ~t~s~t~20+ | ~t~s~t~20+ | ~t~s~t~20+ |~n",
    format(F, ["Temperature delta", "Room reference", "Ice point", "Absolute zero"]),

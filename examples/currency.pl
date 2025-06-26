@@ -1,4 +1,3 @@
-% :- use_module(library(units)).
 :- use_module('../prolog/units.pl').
 
 units:dimension_symbol(currency_dim, '$').
@@ -9,6 +8,7 @@ units:unit_symbol(us_dollar, usd).
 
 units:unit_kind(euro, currency).
 units:unit_kind(us_dollar, currency).
+usd(us_dollar).
 
 exchange_rate(From, To, Rate) :-
    % user code to get real currency conversion value

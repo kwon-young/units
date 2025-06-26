@@ -101,6 +101,7 @@ true.
 ?- qeval(X is ft), qeval(Y is mypk).
 X = 1*kind_of(isq:length)[usc:foot],
 Y = 1*kind_of(isq:length**3)[usc:peck].
+```
 
 > :warning: Be aware that importing a symbol module will introduce a **lot** of short named predicates.
 > This can potentionally cause naming collision with your own code.

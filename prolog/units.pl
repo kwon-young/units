@@ -456,6 +456,10 @@ error:has_type(Quantity, Term) :-
    ),
    implicitly_convertible(Q, Quantity).
 
+unit_origin_0(M, Module:PrefixUnit, Origin),
+      PrefixUnit =.. [Prefix, Unit],
+      prefix(Module:Prefix, _, _) =>
+   unit_origin_0(M, Unit, Origin).
 unit_origin_0(M, Unit, Origin) =>
    (  aliased(unit_origin(Unit, O))
    -> normalize_origin(M, O, Origin)
@@ -651,6 +655,8 @@ comparable_is(A, qp:B, R) =>
 qeval((A, B)) =>
    qeval(A),
    qeval(B).
+qeval(@(Goal)) =>
+   call(Goal).
 qeval(Expr) =>
    context_module(M),
    eval_(M, Expr, Q),
@@ -762,8 +768,7 @@ eval_(_, pi, R) =>
    R = q{v: pi, q: 1, u: 1}.
 eval_(_, random_float, R) =>
    R = q{v: random_float, q: 1, u: 1}.
-eval_(M, unit(X), R) =>
-   normalize_unit(M, X, U),
+eval_(M, unit(X), R), normalize_unit(M, X, U) =>
    when(ground(U), all_unit_kind(U, UKind)),
    when((ground(UKind), ground(Q)), implicitly_convertible(UKind, Q)),
    R = q{v: 1, q: Q, u: U}.
@@ -1109,5 +1114,11 @@ test(slow_conversion, []) :-
 
 test(unitless_with_constraints) :-
    qeval(quantity _ is (3*foot)/(2*m)).
+
+test(systemless_prefix) :-
+   qeval(_ is milli(si:second)).
+
+test(prefix_origin) :-
+   qeval(_ is (si:zeroth_degree_Celsius + 20*degree_Celsius) quantity_from si:absolute_zero).
 
 :- end_tests(units).

@@ -5,6 +5,7 @@ overwrite_(usc:dry_barrel, dry_bbl).
 overwrite_(usc:dry_gallon, dry_gal).
 overwrite_(usc:dry_pint, dry_pt).
 overwrite_(usc:dry_quart, dry_qt).
+overwrite_(iec:volt_ampere_reactive_power, 'VAR').
 overwrite(Unit, Symbol, NewSymbol) :-
    (  overwrite_(Unit, NewSymbol)
    -> true

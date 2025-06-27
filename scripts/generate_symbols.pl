@@ -22,6 +22,7 @@ remove(si:femto(si:tonne)).
 remove(si:pico(si:tonne)).
 remove(si:quecto(si:tonne)).
 remove(si:centi(si:hour)).
+remove(si:hecto(si:hour)).
 remove(si:yocto(si:day)).
 remove(si:ronto(si:day)).
 remove(si:pico(si:boltzmann_constant)).

@@ -17,6 +17,7 @@ remove(imperial:long_ton).
 remove(usc:short_ton).
 remove(si:peta(si:are)).
 remove(si:centi(si:day)).
+remove(si:femto(si:tonne)).
 get_unit_symbol(M:PU, S3) :-
    utils:aliased(unit_defs:any_unit_symbol(M:U, S1)),
    \+ remove(M:U),

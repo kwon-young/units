@@ -24,6 +24,7 @@ remove(si:centi(si:hour)).
 remove(si:yocto(si:day)).
 remove(si:ronto(si:day)).
 remove(si:pico(si:boltzmann_constant)).
+remove(si:pico(si:speed_of_light_in_vacuum)).
 get_unit_symbol(M:PU, S3) :-
    utils:aliased(unit_defs:any_unit_symbol(M:U, S1)),
    \+ remove(M:U),

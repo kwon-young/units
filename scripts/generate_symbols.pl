@@ -18,6 +18,7 @@ remove(usc:short_ton).
 remove(si:peta(si:are)).
 remove(si:centi(si:day)).
 remove(si:femto(si:tonne)).
+remove(si:quecto(si:tonne)).
 remove(si:yocto(si:day)).
 remove(si:ronto(si:day)).
 get_unit_symbol(M:PU, S3) :-

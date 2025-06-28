@@ -41,6 +41,8 @@ get_unit_symbol(M:PU, S3) :-
       PU = U,
       S3 = U
    ).
+get_unit_symbol(si:degree, deg).
+
 main :-
    findall(M-(S-U), get_unit_symbol(M:U, S), P1),
    keysort(P1, P2),

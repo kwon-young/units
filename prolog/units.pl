@@ -803,6 +803,9 @@ eval_(M, origin(Origin), R), all_origin(Origin) =>
 eval_(M, exp(Expr), R) =>
    eval_(M, Expr in 1, R1),
    R = R1.put([v=exp(R1.v)]).
+eval_(M, sin(Expr), R) =>
+   eval_(M, Expr in si:radian, R1),
+   R = R1.put([v=sin(R1.v), q=1, u=1]).
 eval_(M, quantity_from_zero(Expr), R) =>
    eval_(M, Expr - origin(0), R).
 eval_(M, quantity_from(Expr, Origin), R) =>

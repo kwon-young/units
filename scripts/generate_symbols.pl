@@ -1,5 +1,6 @@
 :- use_module('../prolog/units.pl').
 
+overwrite_(international:mechanical_horsepower, hp).
 overwrite_(usc:oil_barrel, oil_bbl).
 overwrite_(usc:dry_barrel, dry_bbl).
 overwrite_(usc:dry_gallon, dry_gal).

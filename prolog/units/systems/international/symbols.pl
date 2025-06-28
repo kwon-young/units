@@ -1,4 +1,4 @@
-:-module(international_symbol,[p/1,(point)/1,(in)/1,inch/1,yd/1,yard/1,gr/1,grain/1,mil/1,'P'/1,pica/1,mi/1,mile/1,twip/1,nmi/1,nautical_mile/1,le/1,league/1,pdl/1,poundal/1,kn/1,knot/1,psi/1,'hp(I)'/1,mechanical_horsepower/1,lbf/1,pound_force/1,ft/1,foot/1,lb/1,pound/1,dr/1,dram/1,oz/1,ounce/1]).
+:-module(international_symbol,[p/1,(point)/1,(in)/1,inch/1,yd/1,yard/1,gr/1,grain/1,mil/1,'P'/1,pica/1,mi/1,mile/1,twip/1,nmi/1,nautical_mile/1,le/1,league/1,pdl/1,poundal/1,kn/1,knot/1,psi/1,hp/1,mechanical_horsepower/1,lbf/1,pound_force/1,ft/1,foot/1,lb/1,pound/1,dr/1,dram/1,oz/1,ounce/1]).
 p(:(international,point)).
 point(:(international,point)).
 in(:(international,inch)).
@@ -22,7 +22,7 @@ poundal(:(international,poundal)).
 kn(:(international,knot)).
 knot(:(international,knot)).
 psi(:(international,psi)).
-'hp(I)'(:(international,mechanical_horsepower)).
+hp(:(international,mechanical_horsepower)).
 mechanical_horsepower(:(international,mechanical_horsepower)).
 lbf(:(international,pound_force)).
 pound_force(:(international,pound_force)).

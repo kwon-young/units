@@ -1,4 +1,4 @@
-:-module(usc_symbol,[acre/1,tsp/1,teaspoon/1,qt/1,quart/1,gal/1,gallon/1,pt/1,pint/1,jig/1,shot/1,gi/1,gill/1,min/1,minim/1,pot/1,pottle/1,'cb(us)'/1,cable/1,section/1,'ftm(us)'/1,fathom/1,rd/1,rod/1,tbsp/1,tablespoon/1,li/1,link/1,c/1,cup/1,'fl dr'/1,fluid_dram/1,bbl/1,barrel/1,dry_qt/1,dry_quart/1,dry_gal/1,dry_gallon/1,dry_pt/1,dry_pint/1,cwt/1,short_hundredweight/1,'oz t'/1,troy_once/1,dwt/1,pennyweight/1,'fl oz'/1,fluid_ounce/1,hogshead/1,oil_bbl/1,oil_barrel/1,dry_bbl/1,dry_barrel/1,qr/1,quarter/1,pk/1,peck/1,p/1,(point)/1,bu/1,bushel/1,(in)/1,inch/1,yd/1,yard/1,mil/1,'P'/1,pica/1,mi/1,mile/1,twip/1,nmi/1,nautical_mile/1,le/1,league/1,inHg/1,inch_of_mercury/1,pdl/1,poundal/1,'lb t'/1,troy_pound/1,psi/1,'hp(I)'/1,mechanical_horsepower/1,kn/1,knot/1,gr/1,grain/1,fur/1,furlong/1,ch/1,chain/1,lbf/1,pound_force/1,ft/1,foot/1,'°R'/1,rankine/1,℉ / 1,degree_Fahrenheit/1,t/1,ton/1,lb/1,pound/1,dr/1,dram/1,oz/1,ounce/1]).
+:-module(usc_symbol,[acre/1,tsp/1,teaspoon/1,qt/1,quart/1,gal/1,gallon/1,pt/1,pint/1,jig/1,shot/1,gi/1,gill/1,min/1,minim/1,pot/1,pottle/1,'cb(us)'/1,cable/1,section/1,'ftm(us)'/1,fathom/1,rd/1,rod/1,tbsp/1,tablespoon/1,li/1,link/1,c/1,cup/1,'fl dr'/1,fluid_dram/1,bbl/1,barrel/1,dry_qt/1,dry_quart/1,dry_gal/1,dry_gallon/1,dry_pt/1,dry_pint/1,cwt/1,short_hundredweight/1,'oz t'/1,troy_once/1,dwt/1,pennyweight/1,'fl oz'/1,fluid_ounce/1,hogshead/1,oil_bbl/1,oil_barrel/1,dry_bbl/1,dry_barrel/1,qr/1,quarter/1,pk/1,peck/1,p/1,(point)/1,bu/1,bushel/1,(in)/1,inch/1,yd/1,yard/1,mil/1,'P'/1,pica/1,mi/1,mile/1,twip/1,nmi/1,nautical_mile/1,le/1,league/1,inHg/1,inch_of_mercury/1,pdl/1,poundal/1,'lb t'/1,troy_pound/1,psi/1,'hp(I)'/1,mechanical_horsepower/1,kn/1,knot/1,gr/1,grain/1,fur/1,furlong/1,ch/1,chain/1,lbf/1,pound_force/1,ft/1,foot/1,'°R'/1,rankine/1,℉ / 1,degree_Fahrenheit/1,t/1,ton/1,lb/1,pound/1,dr/1,dram/1,oz/1,ounce/1,deg_F/1]).
 acre(:(usc,acre)).
 tsp(:(usc,teaspoon)).
 teaspoon(:(usc,teaspoon)).
@@ -107,3 +107,4 @@ dr(:(usc,dram)).
 dram(:(usc,dram)).
 oz(:(usc,ounce)).
 ounce(:(usc,ounce)).
+deg_F(:(usc,degree_Fahrenheit)).

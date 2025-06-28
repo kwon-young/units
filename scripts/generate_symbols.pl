@@ -42,6 +42,8 @@ get_unit_symbol(M:PU, S3) :-
       S3 = U
    ).
 get_unit_symbol(si:degree, deg).
+get_unit_symbol(si:degree_Celsius, deg_C).
+get_unit_symbol(usc:degree_Fahrenheit, deg_F).
 
 main :-
    findall(M-(S-U), get_unit_symbol(M:U, S), P1),

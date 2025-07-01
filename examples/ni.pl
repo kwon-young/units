@@ -1,5 +1,5 @@
 :- use_module('../prolog/units.pl').
-:- use_module('../prolog/units/systems/si/symbols.pl').
+:- use_module('../prolog/units/systems/si.pl').
 
 units:kind(ni:beat_count).
 units:kind(ni:midi_clock).

@@ -1,5 +1,5 @@
 :- use_module('../prolog/units.pl').
-:- use_module('../prolog/units/systems/si/symbols.pl').
+:- use_module('../prolog/units/systems/si.pl').
 
 main :-
    format("units capacitor time curve example...~n"),

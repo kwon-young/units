@@ -1,4 +1,5 @@
-:- use_module(library(units)).
+:- use_module('../prolog/units.pl').
+:- use_module('../prolog/units/systems/si.pl', []).
 
 units:quantity_parent(fuel_consumption, isq:volume/isq:length).
 

@@ -1,5 +1,5 @@
 :- use_module('../prolog/units.pl').
-:- use_module('../prolog/units/systems/si/symbols.pl').
+:- use_module('../prolog/units/systems/si.pl').
 
 avg_speed(Distance, Time, Speed) :-
    qeval(Speed is Distance / Time as isq:speed).

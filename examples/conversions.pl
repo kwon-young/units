@@ -1,5 +1,5 @@
 :- use_module('../prolog/units.pl').
-:- use_module('../prolog/units/systems/si/symbols.pl').
+:- use_module('../prolog/units/systems/si.pl').
 
 main :-
    % simple numeric operations

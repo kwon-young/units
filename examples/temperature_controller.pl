@@ -1,5 +1,5 @@
 :- use_module('../prolog/units.pl').
-:- use_module('../prolog/units/systems/si/symbols.pl').
+:- use_module('../prolog/units/systems/si.pl').
 
 units:relative_point_origin(room_reference_temp,point(21*(si:degree_Celsius))).
 

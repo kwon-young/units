@@ -397,6 +397,7 @@ Speed = _E*isq:speed[_F],
 ## List of quantities and units
 
 Here is an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
+Be aware that the symbols referenced in `Units.md` are symbols as they would be printed by `qformat` and not necessarily how you would use them in code.
 
 You will also find a hierarchical graph representation of quantities in [quantities.pdf](quantities.pdf)
 
@@ -415,6 +416,22 @@ Here is a list of available systems:
 
 You can use the special module `units/systems` to load all systems.
 In that case, no symbols will be exported.
+
+## Printing quantities
+
+You can use the `qformat/1` to pretty print your quantities with unit symbols:
+
+```prolog
+?- qformat(1r3*si:micro(si:ohm)).
+1r3 µΩ
+```
+
+There is a two arguments version to add a format string for the value, the default above being "~p":
+
+```prolog
+?- qformat("~f", si:micro(si:ohm)).
+0.333333 µΩ
+```
 
 ## User customization
 

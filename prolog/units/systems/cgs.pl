@@ -1,4 +1,9 @@
-:-module(cgs,[]).
+:- module(cgs,[]).
+:- reexport(cgs/symbols).
+
+:- use_module(si, []).
+:- use_module(cgs/symbols).
+
 units:alias(cgs:centimetre,si:centi(si:metre)).
 units:alias(cgs:gram,si:gram).
 units:alias(cgs:second,si:second).

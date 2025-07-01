@@ -1,4 +1,9 @@
-:-module(international,[]).
+:- module(international,[]).
+:- reexport(international/symbols).
+
+:- use_module(si, []).
+:- use_module(international/symbols).
+
 units:alias(international:kip,si:kilo(international:pound_force)).
 units:unit_symbol_formula(international:pound,lb,45359237/100000000*(si:kilogram)).
 units:unit_symbol_formula(international:ounce,oz,1/16*(international:pound)).

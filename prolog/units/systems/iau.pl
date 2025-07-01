@@ -1,4 +1,9 @@
-:-module(iau,[]).
+:- module(iau,[]).
+:- reexport(iau/symbols).
+
+:- use_module(si, []).
+:- use_module(iau/symbols).
+
 units:alias(iau:astronomical_unit,si:astronomical_unit).
 units:unit_symbol_formula(iau:day,'D',si:day).
 units:unit_symbol_formula(iau:'Julian_year',a,36525/100*(iau:day)).

@@ -349,15 +349,6 @@ units:quantity_parent(1, dim_1).
 units:unit_kind(1, 1).
 
 :- use_module(units/systems/isq).
-:- use_module(units/systems/si).
-:- use_module(units/systems/angular).
-:- use_module(units/systems/cgs).
-:- use_module(units/systems/hep).
-:- use_module(units/systems/iau).
-:- use_module(units/systems/iec).
-:- use_module(units/systems/imperial).
-:- use_module(units/systems/international).
-:- use_module(units/systems/usc).
 
 %% qformat(+QuantityOrExpr) is det.
 %
@@ -804,7 +795,7 @@ eval_(M, exp(Expr), R) =>
    eval_(M, Expr in 1, R1),
    R = R1.put([v=exp(R1.v)]).
 eval_(M, sin(Expr), R) =>
-   eval_(M, Expr in si:radian, R1),
+   eval_(M, Expr in radian, R1),
    R = R1.put([v=sin(R1.v), q=1, u=1]).
 eval_(M, quantity_from_zero(Expr), R) =>
    eval_(M, Expr - origin(0), R).
@@ -838,8 +829,15 @@ eval_q(X, R), any_quantity(X) =>
 
 :- begin_tests(units, [timeout(2)]).
 
-:- use_module(units/systems/si/symbols).
-:- use_module(units/systems/usc/symbols, [inch/1, foot/1, lbf/1]).
+:- use_module(units/systems/si).
+:- use_module(units/systems/angular, []).
+:- use_module(units/systems/cgs, []).
+:- use_module(units/systems/hep, []).
+:- use_module(units/systems/iau, []).
+:- use_module(units/systems/iec, []).
+:- use_module(units/systems/imperial, []).
+:- use_module(units/systems/international, []).
+:- use_module(units/systems/usc, [inch/1, foot/1, lbf/1]).
 
 qeval_data(si:metre =:= si:metre).
 qeval_data(si:kilo(metre) =:= si:kilo(metre)).

@@ -1,4 +1,9 @@
-:-module(imperial,[]).
+:- module(imperial,[]).
+:- reexport(imperial/symbols).
+
+:- use_module(international, []).
+:- use_module(imperial/symbols).
+
 units:alias(imperial:mechanical_horsepower,international:mechanical_horsepower).
 units:alias(imperial:psi,international:psi).
 units:alias(imperial:kip,international:kip).

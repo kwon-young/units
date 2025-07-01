@@ -30,7 +30,8 @@ To use this library, just wrap all your arithmetic in the `qeval/1` predicate.
 Use multiplication `*` to create quantities:
 
 ```prolog
-?- use_module(library(units)).
+?- use_module(library(units)). % imports qeval/1
+?- use_module(library(units/systems/si)). % loads the si system of units: si:metre...
 ?- qeval(X is 3*si:metre).
 X = 3*kind_of(isq:length)[si:metre].
 ```
@@ -56,6 +57,7 @@ To create a quantity, you can multiply a number with a predefined unit:
 
 ```prolog
 ?- use_module(library(units)).
+?- use_module(library(units/systems/si)).
 
 ?- qeval(Q is 3 * si:metre / si:second).
 Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
@@ -70,41 +72,38 @@ This quantity type was derived from the units used in the expression:
 For convenience, the same units can be used without their system (the `si:` prefix) or with their symbol (`m` for metre and `s` for second):
 
 ```prolog
-?- use_module(library(units/systems/si/symbols)).
 ?- qeval(Q is 3 * m / second).
 Q = 3*kind_of(isq:length/isq:time)[si:metre/si:second].
 ```
 
-Since a lot of units from different systems share the same symbol (or name), the use of symbols is enabled by importing sub modules `units/systems/{System}/symbols`.
+By default, importing a system of units (`use_module(library(units/systems/si))`) will enable the use of symbols for all units defined in this system.
 This will introduce a predicate per symbol and unit name in the current context module.
 These predicates will be used to disambiguate the use of symbols, as well as make sure that no duplicate symbols can be used in the same context.
 
 For example, importing symbols for both `si` and `usc` systems will result in a number of predicate name collisions:
 
 ```prolog
-?- use_module(library(units/systems/si/symbols)).
-?- use_module(library(units/systems/usc/symbols)).
-...
-_symbol)
-ERROR: import/1: No permission to import usc_symbol:(ft/1) into user (already imported from si_symbol)
-ERROR: import/1: No permission to import usc_symbol:(pk/1) into user (already imported from si_symbol)
-...
+?- use_module(library(units/systems/si)).
+?- use_module(library(units/systems/usc)).
+ERROR: import/1: No permission to import usc_symbol:(min/1) into user (already imported from si_symbol)
+ERROR: import/1: No permission to import usc_symbol:(t/1) into user (already imported from si_symbol)
+ERROR: import/1: No permission to import usc_symbol:(c/1) into user (already imported from si_symbol)
 true.
 ```
 
 You can resolve conflicts by using the [`use_module/2`](https://www.swi-prolog.org/pldoc/doc_for?object=use_module/2) directive by including, excluding or renaming predicates:
 
 ```prolog
-?- use_module(library(units/systems/si/symbols), except([ft/1])).
-?- use_module(library(units/systems/usc/symbols), [ft/1, pk/1 as mypk]).
+?- use_module(library(units/systems/si), except([t/1])).
+?- use_module(library(units/systems/usc), [t/1, min/1 as myminim]).
 true.
-?- qeval(X is ft), qeval(Y is mypk).
-X = 1*kind_of(isq:length)[usc:foot],
-Y = 1*kind_of(isq:length**3)[usc:peck].
+?- qeval(X is t), qeval(Y is myminim).
+X = 1*kind_of(isq:mass)[usc:ton],
+Y = 1*kind_of(isq:length**3)[usc:minim].
 ```
 
 > :warning: Be aware that importing a symbol module will introduce a **lot** of short named predicates.
-> This can potentionally cause naming collision with your own code.
+> This can potentially cause naming collision with your own code.
 > Therefore, when using symbols in code, try to import only the symbol used and no more.
 > Even better is to avoid symbols in code altogether, and only used symbols for oneoff
 > interactive queries on the top level.
@@ -400,6 +399,22 @@ Speed = _E*isq:speed[_F],
 Here is an exhaustive list of [quantities](Quantities.md) and [units](Units.md) that you can use out of the box with this library.
 
 You will also find a hierarchical graph representation of quantities in [quantities.pdf](quantities.pdf)
+
+Here is a list of available systems:
+
+* `units/systems/angular`
+* `units/systems/cgs`
+* `units/systems/hep`
+* `units/systems/iau`
+* `units/systems/iec`
+* `units/systems/imperial`
+* `units/systems/international`
+* `units/systems/isq`
+* `units/systems/si`
+* `units/systems/usc`
+
+You can use the special module `units/systems` to load all systems.
+In that case, no symbols will be exported.
 
 ## User customization
 

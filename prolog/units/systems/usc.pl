@@ -1,4 +1,10 @@
-:-module(usc,[]).
+:- module(usc,[]).
+:- reexport(usc/symbols).
+
+:- use_module(si, []).
+:- use_module(international, []).
+:- use_module(usc/symbols).
+
 units:alias(usc:mechanical_horsepower,international:mechanical_horsepower).
 units:alias(usc:psi,international:psi).
 units:alias(usc:kip,international:kip).

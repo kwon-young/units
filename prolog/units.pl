@@ -350,6 +350,22 @@ units:unit_kind(1, 1).
 
 :- use_module(units/systems/isq).
 
+:- multifile message_hook/3.
+:- dynamic message_hook/3.
+
+user:message_hook(error(permission_error(import_into(_),procedure,M1:(P/1)),Context),error,_) :-
+   Context = context(import/1,already_from(M2)),
+   % Assume module S_symbol implies system S
+   atom_concat(S1,'_symbol',M1),
+   atom_concat(S2,'_symbol',M2),
+   (  unit_symbol(_:UnitName,P)
+   -> alias_(S1:UnitName,S2:UnitName)
+   ;  alias_(S1:P,S2:P)
+   ).
+
+alias_(X,Y) :- alias(X,Y), !.
+alias_(X,Y) :- alias(Y,X), !.
+
 %% qformat(+QuantityOrExpr) is det.
 %
 %  This predicate is a convenience wrapper around `qformat/2`.

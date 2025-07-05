@@ -6,7 +6,7 @@
 
 units:alias(iau:astronomical_unit,si:astronomical_unit).
 units:unit_symbol_formula(iau:day,'D',si:day).
-units:unit_symbol_formula(iau:'Julian_year',a,36525/100*(iau:day)).
+units:unit_symbol_formula(iau:'Julian_year',aj,36525/100*(iau:day)).
 units:unit_symbol_formula(iau:solar_mass,'M_☉',198847/100000*10**30*(si:kilogram)).
 units:unit_symbol_formula(iau:'Jupiter_mass','M_JUP',1898/1000*10**27*(si:kilogram)).
 units:unit_symbol_formula(iau:'Earth_mass','M_EARTH',59742/10000*10**24*(si:kilogram)).

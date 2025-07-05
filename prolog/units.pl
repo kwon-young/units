@@ -347,6 +347,7 @@ units:absolute_point_origin(0, _).
 units:dimension_symbol(dim_1, '').
 units:quantity_parent(1, dim_1).
 units:unit_kind(1, 1).
+units:unit_symbol(1, 1).
 
 :- use_module(units/systems/isq).
 
@@ -1137,5 +1138,9 @@ test(systemless_prefix) :-
 
 test(prefix_origin) :-
    qeval(_ is (si:zeroth_degree_Celsius + 20*degree_Celsius) quantity_from si:absolute_zero).
+
+test(dimensionless) :-
+   qeval(X is 1),
+   qeval(_ is X*si:metre).
 
 :- end_tests(units).

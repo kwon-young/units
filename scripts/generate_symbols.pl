@@ -1,4 +1,13 @@
 :- use_module('../prolog/units.pl').
+:- use_module('../prolog/units/systems/si.pl', []).
+:- use_module('../prolog/units/systems/angular.pl', []).
+:- use_module('../prolog/units/systems/cgs.pl', []).
+:- use_module('../prolog/units/systems/hep.pl', []).
+:- use_module('../prolog/units/systems/iau.pl', []).
+:- use_module('../prolog/units/systems/iec.pl', []).
+:- use_module('../prolog/units/systems/imperial.pl', []).
+:- use_module('../prolog/units/systems/international.pl', []).
+:- use_module('../prolog/units/systems/usc.pl', []).
 
 overwrite_(international:mechanical_horsepower, hp).
 overwrite_(usc:oil_barrel, oil_bbl).

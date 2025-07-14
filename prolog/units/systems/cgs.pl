@@ -13,4 +13,4 @@ units:unit_symbol_formula(cgs:erg,erg,(cgs:dyne)*(cgs:centimetre)).
 units:unit_symbol_formula(cgs:barye,'Ba',(cgs:gram)/((cgs:centimetre)*(cgs:second)**2)).
 units:unit_symbol_formula(cgs:poise,'P',(cgs:gram)/((cgs:centimetre)*(cgs:second))).
 units:unit_symbol_formula(cgs:stokes,'St',(cgs:centimetre)**2/(cgs:second)).
-units:unit_symbol_formula(cgs:kayser,'K',1/(cgs:centimetre)).
+units:unit_symbol_formula(cgs:kayser,'Ky',1/(cgs:centimetre)).

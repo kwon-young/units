@@ -359,7 +359,7 @@ user:message_hook(error(permission_error(import_into(_),procedure,M1:(P/1)),Cont
    % Assume module S_symbol implies system S
    atom_concat(S1,'_symbol',M1),
    atom_concat(S2,'_symbol',M2),
-   (  unit_symbol(_:UnitName,P)
+   (  unit(_:UnitName,P)
    -> alias_(S1:UnitName,S2:UnitName)
    ;  alias_(S1:P,S2:P)
    ).

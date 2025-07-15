@@ -69,13 +69,6 @@ all_unit_kind_(Unit, R), derived(Unit) =>
    normalize_kind(NKind, R).
 all_unit_kind_(_, _) => fail.
 
-fail_call(M:Goal, Arg) :-
-   debug(fail_call, "~p", [M]),
-   atom(Goal),
-   Head =.. [Goal, Arg],
-   predicate_property(M:Head, visible),
-   call(M:Head).
-   
 normalize_unit(_, Unit, R), var(Unit), ground(R) =>
    Unit = R.
 normalize_unit(M, Unit, R), var(Unit), var(R) =>

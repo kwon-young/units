@@ -795,9 +795,40 @@ eval_(M, origin(Origin), R), all_origin(Origin) =>
 eval_(M, exp(Expr), R) =>
    eval_(M, Expr in 1, R1),
    R = R1.put([v=exp(R1.v)]).
-eval_(M, sin(Expr), R) =>
-   eval_(M, Expr in radian, R1),
-   R = R1.put([v=sin(R1.v), q=1, u=1]).
+eval_(M, sin(Expr), R), fail_call(M:sin, Radian) =>
+   eval_(M, Expr in Radian, R1),
+   R = q{v: sin(R1.v), q: 1, u: 1}.
+eval_(M, cos(Expr), R), fail_call(M:cos, Radian) =>
+   eval_(M, Expr in Radian, R1),
+   R = q{v: cos(R1.v), q: 1, u: 1}.
+eval_(M, tan(Expr), R), fail_call(M:tan, Radian) =>
+   eval_(M, Expr in Radian, R1),
+   R = q{v: tan(R1.v), q: 1, u: 1}.
+eval_(M, asin(Expr), R), fail_call(M:asin, Radian) =>
+   eval_(M, Expr in 1, R1),
+   eval_(M, Radian, R2),
+   R = R2.put([v=asin(R1.v)]).
+eval_(M, acos(Expr), R), fail_call(M:acos, Radian) =>
+   eval_(M, Expr in 1, R1),
+   eval_(M, Radian, R2),
+   R = R2.put([v=acos(R1.v)]).
+eval_(M, atan(Expr), R), fail_call(M:atan, Radian) =>
+   eval_(M, Expr in 1, R1),
+   eval_(M, Radian, R2),
+   R = R2.put([v=atan(R1.v)]).
+eval_(M, atan2(A, B), R), fail_call(M:atan2, Radian) =>
+   eval_(M, A, RA1),
+   eval_(M, B, RB1),
+   (  common_quantity(RA1.q, RB1.q, _)
+   -> (  common_unit(RA1.u, _, RB1.u, _, U)
+      -> eval_(M, RA1 in U, RA2),
+         eval_(M, RB1 in U, RB2)
+      ;  domain_error(RA1.u, RB1.u)
+      )
+   ;  domain_error(RA1.q, RB1.q)
+   ),
+   eval_(M, Radian, R2),
+   R = R2.put([v=atan2(RA2.v, RB2.v)]).
 eval_(M, quantity_from_zero(Expr), R) =>
    eval_(M, Expr - origin(0), R).
 eval_(M, quantity_from(Expr, Origin), R) =>

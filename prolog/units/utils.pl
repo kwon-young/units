@@ -10,7 +10,8 @@
    mapexpr/4,
    aliased/1,
    lazy/2,
-   derived/1
+   derived/1,
+   fail_call/2
 ]).
 
 :- use_module(library(yall)).
@@ -352,6 +353,13 @@ lazy(Goal, _) =>
 derived(_*_).
 derived(_/_).
 derived(_**_).
+
+fail_call(M:Goal, Arg) :-
+   debug(fail_call, "~p", [M]),
+   atom(Goal),
+   Head =.. [Goal, Arg],
+   predicate_property(M:Head, visible),
+   call(M:Head).
 
 :- begin_tests(utils).
 
